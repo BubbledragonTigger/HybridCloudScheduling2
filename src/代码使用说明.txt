@@ -1,0 +1,6 @@
+1.在Evaluation中更改读入的文件
+2.在Evaluation中26行更改使用的算法，配合第三步一起修改
+3.在workflow中40,41,46行更改使用的算法
+4.传输带宽更改VM下面的第20行Network Speed
+5.传输带宽更改Channel下面的第47行的transferSpeed
+6.更改ELSH里面的设计隐私任务哪几个需要
