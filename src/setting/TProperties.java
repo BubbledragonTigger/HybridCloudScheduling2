@@ -231,6 +231,11 @@ public class TProperties extends HashMap<Task,Double> implements Comparator<Task
 
             }
         }else if(type == Type.C_LEVEL){
+
+            //Firstly,caculate maxOutd of the graph
+
+
+
             for(int j = wf.size()-1;j>=0;j--){
                 Task task = wf.get(j);
                 double clevel = 0;

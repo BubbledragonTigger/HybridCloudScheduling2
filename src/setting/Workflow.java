@@ -11,6 +11,8 @@ public class Workflow {
     //used to accelerate searching a task index in the workflow
     private HashMap<Task, Integer> taskIndices = new HashMap<>();
 
+
+
     /**
      * construct a workflow according to @param file
      * two kinds of formats are supported: 1. DOT graphs; 2. Pegasus dax files
@@ -37,17 +39,23 @@ public class Workflow {
 
 
 
-        b_levels = new TProperties(this,TProperties.Type.PEFT);
-        Collections.sort(list, b_levels);
+//        b_levels = new TProperties(this,TProperties.Type.C_LEVEL);
+//        Collections.sort(list, b_levels);
 
         Collections.reverse(list);
         System.out.println("topological sort and blevel：");
 //        for (Task t : list)
 //            System.out.println(t.getName() + "\t" + b_levels.get(t));
+        int maxOutd = 0;
         for (int i = 0; i < list.size(); i++) {
+
             Task t = list.get(i);
+            if(t.getOutEdges().size()>maxOutd) maxOutd = t.getOutEdges().size();
             taskIndices.put(t, i);
         }
+
+        //only used in Clevel
+        Workflow.maxOutd = maxOutd;
 
         //sort edges for each task,就是按照节点的优先级排序的，优先级高的排在前面
         class EComparator implements Comparator<Edge> {
@@ -149,6 +157,8 @@ public class Workflow {
         return s_Levels.get(this.getEntryTask());
     }
 
+    //only used in Clevel.Caculate max out degree of the graph
+    public static int maxOutd=0;
 
     //local test
     public static void main(String[] args){
