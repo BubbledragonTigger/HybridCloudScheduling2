@@ -11,7 +11,7 @@ import setting.*;
 
 import static java.lang.Math.max;
 
-public class ELSH {
+public class CCSH {
     private CSolution csolution;
 
     //记录边分配策略
@@ -33,8 +33,11 @@ public class ELSH {
      */
 
     public CSolution listSchedule(Workflow wf, TProperties.Type tctype, int type) {
+
+
         ArrayList<Task> tasks = new ArrayList<>(wf.getTaskList());
-        setPrivacy(tasks);
+        //(tasks);
+
 
 
         //在传入之前已经拓扑排序过了
@@ -761,6 +764,45 @@ public class ELSH {
         return DAT;
     }
 
+
+    //distributionForecastTable,only used in CCSH
+    private Double dFT(Task task,VM_Private privateVM){
+        Double result=0.0;
+        for(Edge outEdge: task.getOutEdges()){
+            Task succTask = outEdge.getDestination();
+
+            //判断是否是私密任务，是私密任务就是云内传输
+            if(succTask.getRunOnPrivateOrPublic() == true){
+                result+= succTask.getTaskSize()/VM_Private.SPEEDS[VM_Private.SLOWEST];
+                result+= outEdge.getDataSize()/VM.NETWORK_SPEED;
+            }
+            else{
+
+                result+=succTask.getTaskSize()/VM_Public.SPEEDS[VM_Public.FASTEST];
+                result+=outEdge.getDataSize()/Channel.getTransferSpeed();
+            }
+
+        }
+        return result;
+    }
+
+    private Double dFT(Task task,VM_Public publicVM){
+        Double result=0.0;
+        for(Edge outEdge: task.getOutEdges()) {
+            Task succTask = outEdge.getDestination();
+
+            //判断是否是私密任务，是私密任务就是云内传输
+            if (succTask.getRunOnPrivateOrPublic() == true) {
+                result += succTask.getTaskSize() / VM_Private.SPEEDS[VM_Private.SLOWEST];
+                result += outEdge.getDataSize() / Channel.getTransferSpeed();
+            } else {
+
+                result += succTask.getTaskSize() / VM_Public.SPEEDS[VM_Public.FASTEST];
+                result += outEdge.getDataSize() / VM.NETWORK_SPEED;
+            }
+        }
+        return result;
+    }
 
     //Algorithm 2 ALLocateIncomingEdges(n$_j$,v$_l$),公有云上
     public double allocateIncomingEdges(Task nj, VM_Public vl, int step) {

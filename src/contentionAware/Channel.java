@@ -44,7 +44,7 @@ public class Channel {
 
     //跨云10m
     //private final static double transferSpeed = 10 * 1000;
-    private final static double transferSpeed = 25;
+    private final static double transferSpeed = 1;
 
     //---------------------getter and setter-----------
     public static HashMap<Double, Edge> getHashMapUploadStartTime() {

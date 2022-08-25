@@ -232,8 +232,8 @@ public class TProperties extends HashMap<Task,Double> implements Comparator<Task
             }
         }else if(type == Type.C_LEVEL){
 
-            //Firstly,caculate maxOutd of the graph
-
+            //Firstly,get maxOutd of the graph
+            int maxOutd = Workflow.maxOutd;
 
 
             for(int j = wf.size()-1;j>=0;j--){
@@ -245,7 +245,7 @@ public class TProperties extends HashMap<Task,Double> implements Comparator<Task
                 }
                 if(task.getRunOnPrivateOrPublic()==true){
 
-                    clevel +=task.getTaskSize()/VM_Private.SPEEDS[0];
+                    clevel +=task.getTaskSize()/VM_Private.SPEEDS[VM_Private.SLOWEST];
                     double outdData = 0;  //结果乘outd
                     for(Edge outEdge: task.getOutEdges()) {
                         Task succTask = outEdge.getDestination();
@@ -256,11 +256,13 @@ public class TProperties extends HashMap<Task,Double> implements Comparator<Task
                             outdData += outEdge.getDataSize() / Channel.getTransferSpeed();
                         }
                     }
-                    outdData = outdData*task.getOutEdges().size();
+                    if(task.getOutEdges() != null || task.getOutEdges().size() !=0 ){
+                        outdData = outdData*(1+task.getOutEdges().size()/maxOutd);
+                    }
                     clevel +=outdData;
                 }
                 else{
-                    clevel +=task.getTaskSize()/VM_Private.SPEEDS[8];
+                    clevel +=task.getTaskSize()/VM_Public.SPEEDS[VM_Public.FASTEST];
                     double outdData = 0;  //结果乘outd
                     for(Edge outEdge: task.getOutEdges()) {
                         Task succTask = outEdge.getDestination();
@@ -271,7 +273,9 @@ public class TProperties extends HashMap<Task,Double> implements Comparator<Task
                             outdData += outEdge.getDataSize() / Channel.getTransferSpeed();
                         }
                     }
-                    outdData = outdData*task.getOutEdges().size();
+                    if(task.getOutEdges() != null || task.getOutEdges().size() !=0 ){
+                        outdData = outdData*(1+task.getOutEdges().size()/maxOutd);
+                    }
                     clevel +=outdData;
                 }
                 this.put(task,clevel);
