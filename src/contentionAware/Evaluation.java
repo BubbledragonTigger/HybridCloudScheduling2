@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 public class Evaluation {
     public static void main(String[] args) throws IOException {
-        //test("D:\\workflowSamples\\MONTAGE\\MONTAGE.n.50.0.dax",false);  //真实工作流
-        test("D:\\example_6.dot",true);  //模拟工作流
+        test("D:\\workflowSamples\\CYBERSHAKE\\CYBERSHAKE.n.50.2.dax",false);  //真实工作流
+        //test("D:\\example_7.dot",true);  //模拟工作流
 
 
     }
@@ -20,7 +20,7 @@ public class Evaluation {
         CCSH ccsh = new CCSH();
         long t1 = System.currentTimeMillis();
 
-        list.add(ccsh.listSchedule(wf, TProperties.Type.IPPTS, 1));
+        list.add(ccsh.listSchedule(wf, TProperties.Type.C_LEVEL, 1));
         long t2 = System.currentTimeMillis();
 
         System.out.println("runTime: " +  (t2-t1));

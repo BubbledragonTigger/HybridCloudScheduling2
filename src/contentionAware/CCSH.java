@@ -36,27 +36,15 @@ public class CCSH {
 
 
         ArrayList<Task> tasks = new ArrayList<>(wf.getTaskList());
-        //(tasks);
-
-
 
         //在传入之前已经拓扑排序过了
         Collections.sort(tasks, new TProperties(wf, tctype));
         Collections.reverse(tasks);
-        //Collections.sort(tasks, new TProperties(wf, tctype)); //sort based on tctype
-
-        //Collections.sort(tasks, new TProperties(wf, TProperties.Type.B_LEVEL));
-        //Collections.reverse(tasks);    // larger first
-
 
 
         //创建私有云公有云服务器列表
         ArrayList<VM_Private> vmPrivateList = new ArrayList<>();
         ArrayList<VM_Public> vmPublicList = new ArrayList<>();
-
-
-
-
 
 
         //csolution = new CSolution();
@@ -97,10 +85,14 @@ public class CCSH {
                         double LHET = task.getPCM()[0]-task.getTaskSize()/vm.getSpeed();                  //Compute LHET
                         double Lhead = tfTask + LHET;
                         tfTask = Lhead;
+                    }else if(tctype == TProperties.Type.C_LEVEL)
+                    {
+                        double dft = dFT(task,vm);
+                        tfTask = tfTask + dft;
                     }
 
 
-
+                    //针对于HEFT中，minEFT代表的是最早完成时间，在IPPTS,PEFT,CCSH中不是代表最早完成时间
                     if(minEFT>tfTask){
                         minEST = tsTask;
                         minEFT = tfTask;
@@ -129,6 +121,10 @@ public class CCSH {
                         double LHET = task.getPCM()[1]-task.getTaskSize()/vm.getSpeed();                  //Compute LHET
                         double Lhead = tfTask + LHET;
                         tfTask = Lhead;
+                    }else if(tctype == TProperties.Type.C_LEVEL)
+                    {
+                        double dft = dFT(task,vm);
+                        tfTask = tfTask + dft;
                     }
 
                     if(minEFT>tfTask){
@@ -157,6 +153,10 @@ public class CCSH {
                         double LHET = task.getPCM()[0]-task.getTaskSize()/vm.getSpeed();                  //Compute LHET
                         double Lhead = tfTask + LHET;
                         tfTask = Lhead;
+                    }else if(tctype == TProperties.Type.C_LEVEL)
+                    {
+                        double dft = dFT(task,vm);
+                        tfTask = tfTask + dft;
                     }
 
                     if(minEFT>tfTask){
@@ -768,6 +768,7 @@ public class CCSH {
     //distributionForecastTable,only used in CCSH
     private Double dFT(Task task,VM_Private privateVM){
         Double result=0.0;
+        if(task.getName().equals("exit")) return result;
         for(Edge outEdge: task.getOutEdges()){
             Task succTask = outEdge.getDestination();
 

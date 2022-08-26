@@ -36,7 +36,7 @@ public class Workflow {
         System.out.println("succeed to read a workflow from " + file);
         list = topoSort(list.get(0));   //为什么先拓扑排序后按gamma排序，直接gamma排序不行吗。后续懂了：gamma排序也是基于拓扑排序
 
-        setPrivacy(list);  //设置隐私
+        setPrivacy(list);  //设置隐私，在Workflow类里面设置，就无需在CCSH算法里面设置了。
 
 
         int maxOutd = 0;
@@ -129,47 +129,47 @@ public class Workflow {
     private List<Task> setPrivacy(List<Task> tasks){
 
         //设置随机数B=0.1，如果任务大小是50，则设置其中5个任务为私有任务
-//        double beta = 0.1;
-//        Random ran = new Random();
-//        ran.setSeed(3);
-//        Set<Integer> set = new TreeSet<>();
-//        while(true){
-//            int a = ran.nextInt(50);
-//            set.add(a);
-//            int privacyMaxsize = (int)(tasks.size()*beta);
-//            if(set.size()>=privacyMaxsize){
-//                break;
-//            }
-//        }
-//
-//        for (int i = 0; i < tasks.size(); i++) {
-//            Task task = tasks.get(i);
-//            task.setRunOnPrivateOrPublic(false);
-//
-//            if(task.getName().equals("exit") || task.getName().equals("entry")) continue;
-//            Integer number=Integer.valueOf(task.getName().substring(2));
-//            if(set.contains(number)){
-//                task.setRunOnPrivateOrPublic(true);
-//            }
-//        }
+        double beta = 0.1;
+        Random ran = new Random();
+        ran.setSeed(4);
+        Set<Integer> set = new TreeSet<>();
+        while(true){
+            int a = ran.nextInt(50);
+            set.add(a);
+            int privacyMaxsize = (int)(tasks.size()*beta);
+            if(set.size()>=privacyMaxsize){
+                break;
+            }
+        }
 
-
-        //对特定任务设置隐私
         for (int i = 0; i < tasks.size(); i++) {
             Task task = tasks.get(i);
             task.setRunOnPrivateOrPublic(false);
-//            if(task.getName().equals(("ID00001")) || task.getName().equals(("ID00002")) || task.getName().equals(("ID00049"))){
-//                task.setRunOnPrivateOrPublic(true);
-//            }
-            //dot5
-//            if(task.getName().equals(("1")) || task.getName().equals(("2")) || task.getName().equals(("9"))){
-//                task.setRunOnPrivateOrPublic(true);
-//            }
-            //dot6
-            if( task.getName().equals(("1")) || task.getName().equals(("2")) || task.getName().equals(("9"))){
+
+            if(task.getName().equals("exit") || task.getName().equals("entry")) continue;
+            Integer number=Integer.valueOf(task.getName().substring(2));
+            if(set.contains(number)){
                 task.setRunOnPrivateOrPublic(true);
             }
         }
+
+
+        //对特定任务设置隐私
+//        for (int i = 0; i < tasks.size(); i++) {
+//            Task task = tasks.get(i);
+//            task.setRunOnPrivateOrPublic(false);
+////            if(task.getName().equals(("ID00001")) || task.getName().equals(("ID00002")) || task.getName().equals(("ID00049"))){
+////                task.setRunOnPrivateOrPublic(true);
+////            }
+//            //dot5
+////            if(task.getName().equals(("1")) || task.getName().equals(("2")) || task.getName().equals(("9"))){
+////                task.setRunOnPrivateOrPublic(true);
+////            }
+//            //dot6
+//            if( task.getName().equals(("1")) || task.getName().equals(("2")) || task.getName().equals(("9")) || task.getName().equals(("8"))){
+//                task.setRunOnPrivateOrPublic(true);
+//            }
+//        }
         return tasks;
     }
 
