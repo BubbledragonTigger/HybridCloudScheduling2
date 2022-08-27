@@ -239,9 +239,13 @@ public class TProperties extends HashMap<Task,Double> implements Comparator<Task
             for(int j = wf.size()-1;j>=0;j--){
                 Task task = wf.get(j);
                 double clevel = 0;
+                ;
                 for(Edge outEdge: task.getOutEdges()){
                     Double childClevel = this.get(outEdge.getDestination());
+
                     clevel = Math.max(clevel,childClevel);
+                    //为了防止因为精度产生父子结点clevel相等的情况，我们在这里给clevel加一个微小数值，使之必须满足拓扑排序
+                    clevel+=0.000000001;
                 }
                 if(task.getRunOnPrivateOrPublic()==true){
 
@@ -251,6 +255,7 @@ public class TProperties extends HashMap<Task,Double> implements Comparator<Task
                         Task succTask = outEdge.getDestination();
                         if(succTask.getRunOnPrivateOrPublic()== true) {
                             outdData += outEdge.getDataSize() / VM.NETWORK_SPEED;
+
                         }
                         else {
                             outdData += outEdge.getDataSize() / Channel.getTransferSpeed();
@@ -273,7 +278,7 @@ public class TProperties extends HashMap<Task,Double> implements Comparator<Task
                             outdData += outEdge.getDataSize() / Channel.getTransferSpeed();
                         }
                     }
-                    if(task.getOutEdges() != null || task.getOutEdges().size() !=0 ){
+                    if(task.getOutEdges() != null && task.getOutEdges().size() !=0 ){
                         outdData = outdData*(1+task.getOutEdges().size()/maxOutd);
                     }
                     clevel +=outdData;

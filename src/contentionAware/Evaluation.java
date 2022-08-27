@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 public class Evaluation {
     public static void main(String[] args) throws IOException {
-        test("D:\\workflowSamples\\CYBERSHAKE\\CYBERSHAKE.n.50.2.dax",false);  //真实工作流
+        test("D:\\workflowSamples\\CYBERSHAKE\\CYBERSHAKE.n.50.2    .dax",false);  //真实工作流
         //test("D:\\example_7.dot",true);  //模拟工作流
 
 
