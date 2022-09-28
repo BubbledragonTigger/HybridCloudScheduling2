@@ -129,7 +129,7 @@ public class Workflow {
     private List<Task> setPrivacy(List<Task> tasks){
 
         //设置随机数B=0.1，如果任务大小是50，则设置其中5个任务为私有任务
-        double beta = 0.1;
+        double beta = 0.2;
         Random ran = new Random();
         ran.setSeed(4);
         Set<Integer> set = new TreeSet<>();
@@ -209,6 +209,10 @@ public class Workflow {
 
     //only used in Clevel.Caculate max out degree of the graph
     public static int maxOutd=0;
+
+    public void setSequentialLength(){
+        return;
+    }
 
     //local test
     public static void main(String[] args){

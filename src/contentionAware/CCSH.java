@@ -13,7 +13,7 @@ import static java.lang.Math.max;
 
 public class CCSH {
     private CSolution csolution;
-
+    private int publicVMMaxNum;
     //记录边分配策略
     private ArrayList<EAllocation> eAllocationList = new ArrayList<>();
 
@@ -520,6 +520,8 @@ public class CCSH {
 
     //准备私有云上候选集
     public ArrayList<VM_Private> getPreparePrivateVMCandidate(ArrayList<VM_Private> vmPrivateList, int type) {
+        //int maxNum =
+
         boolean emptyFlag = false;
         for (VM_Private vm : vmPrivateList) {
             if(vm.getTasks()==null){
