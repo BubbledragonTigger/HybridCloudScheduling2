@@ -14,6 +14,8 @@ import static java.lang.Math.max;
 public class CCSH {
     private CSolution csolution;
     private int publicVMMaxNum;
+
+    private int test;
     //记录边分配策略
     private ArrayList<EAllocation> eAllocationList = new ArrayList<>();
 
