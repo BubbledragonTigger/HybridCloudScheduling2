@@ -13,9 +13,7 @@ import static java.lang.Math.max;
 
 public class CCSH {
     private CSolution csolution;
-    private int publicVMMaxNuma;
 
-    private int test;aaaasssssssssssssss
     //记录边分配策略
     private ArrayList<EAllocation> eAllocationList = new ArrayList<>();
 
@@ -522,7 +520,7 @@ public class CCSH {
 
     //准备私有云上候选集
     public ArrayList<VM_Private> getPreparePrivateVMCandidate(ArrayList<VM_Private> vmPrivateList, int type) {
-        //int maxNum =
+        int maxNum = ProjectCofig.privateVMMaxNum;
 
         boolean emptyFlag = false;
         for (VM_Private vm : vmPrivateList) {
@@ -535,15 +533,20 @@ public class CCSH {
             }
         }
 
+
+
         if (vmPrivateList.size() == 0 || emptyFlag == false) {
-            VM_Private vm_private = new VM_Private(++(VM_Private.idInterval), type);
-            vmPrivateList.add(vm_private);
+            if(vmPrivateList.size()<maxNum){
+                VM_Private vm_private = new VM_Private(++(VM_Private.idInterval), type);
+                vmPrivateList.add(vm_private);
+            }
         }
 
         //去除null，防止排序时报空指针异常
         ArrayList<VM_Private> Nonlist = new ArrayList<>();
         Nonlist.add(null);
         vmPrivateList.removeAll(Nonlist);
+
 
         Collections.sort(vmPrivateList, new Comparator<VM_Private>() {
             @Override

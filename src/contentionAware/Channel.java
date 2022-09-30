@@ -1,7 +1,7 @@
 package contentionAware;
 
 import setting.Edge;
-
+import setting.ProjectCofig;
 import java.util.HashMap;
 import java.util.Objects;
 
@@ -43,7 +43,7 @@ public class Channel {
     private static HashMap<Double,Edge> hashMapDownloadFinishTime ;
 
     //跨云10m
-    private final static double transferSpeed = 10 * 1000;
+    private final static double transferSpeed = ProjectCofig.vmInterNetworkSpeed;
     //private final static double transferSpeed = 1;
 
     //---------------------getter and setter-----------

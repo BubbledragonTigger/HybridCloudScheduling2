@@ -16,7 +16,7 @@ public  class  VM {
 
     private ArrayList<Task> tasks;
     //改
-    public static double NETWORK_SPEED = 10 * 1000 * 1000;
+    public static double NETWORK_SPEED = ProjectCofig.vmIntraNetworkSpeed;
     //public static double NETWORK_SPEED = 50 ;
 
     public static  int FASTEST = 8;
