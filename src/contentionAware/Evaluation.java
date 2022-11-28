@@ -13,9 +13,7 @@ public class Evaluation {
 //        }
         //单个算法使用
         //test(ProjectCofig.path,false);  //真实工作流
-        test("D:\\example_7.dot",true);  //模拟工作流
-
-
+        test("D:\\example_77.dot",true);  //模拟工作流
     }
 
     private static String[] test(String file,boolean visualizeFlag)

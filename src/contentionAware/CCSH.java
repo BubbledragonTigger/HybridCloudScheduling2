@@ -727,6 +727,8 @@ public class CCSH {
                 parentTask.setPriavteVM(pTAllocation.getPrivateVM());
                 parentTask.setPublicVM(pTAllocation.getPublicVM());
                 parentTask.setRunOnPrivateOrPublic(pTAllocation.getPrivateVM() == null ? false : true);
+                parentTask.setAST(pTAllocation.getStartTime());
+                parentTask.setAFT(pTAllocation.getFinishTime());
 
                 if (parentTask.getPriavteVM() == vl && parentTask.getRunOnPrivateOrPublic() == true) {
 
@@ -990,9 +992,11 @@ public class CCSH {
             }
             double minParentsDAT  = Double.MAX_VALUE;   //针对复制，取到达时间的最小值，再加到DAT中
             for(TAllocation pTAllocation: pTAllocationList) {
-                parentTask.setPriavteVM(pTAllocation.getPrivateVM());
+                parentTask.setPriavteVM(pTAllocation.getPrivateVM());  //这里其实用tallocation.getPrivateVM()更好，只是之前没想着加复制调度不得已这样做
                 parentTask.setPublicVM(pTAllocation.getPublicVM());
                 parentTask.setRunOnPrivateOrPublic(pTAllocation.getPrivateVM() == null ? false : true);
+                parentTask.setAST(pTAllocation.getStartTime());
+                parentTask.setAFT(pTAllocation.getFinishTime());
 
                 if ((parentTask.getRunOnPrivateOrPublic() == false) && parentTask.getPublicVM() == vl) {
                     minParentsDAT = Math.min(minParentsDAT,parentTask.getAFT());
@@ -1232,6 +1236,7 @@ public class CCSH {
             }
 
         }
+        //数据最后到的我们优先复制
         Collections.sort(edgesNotInThisVM, new Comparator<Edge>() {
             public int compare(Edge e1, Edge e2) {
                 if(e1 == null || e2 == null){ //entryTask
@@ -1271,7 +1276,6 @@ public class CCSH {
                 return -1 * Double.compare(dat1, dat2);
             }
         });
-        //Collections.reverse(edgesNotInThisVM);
         List<Task> parentsNotInThisVM = new ArrayList<>();
         for(Edge edge : edgesNotInThisVM)
             parentsNotInThisVM.add(edge.getSource());
