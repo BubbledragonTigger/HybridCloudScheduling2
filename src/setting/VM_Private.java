@@ -44,10 +44,12 @@ public class VM_Private extends VM{
             return UNIT_COSTS[type];
         }
 
-        public int getId() {
+        public Integer getId() {
             return id;
         }
-
+        public void removeTask(Task task){
+                tasks.remove(task);
+        }
         public int getType() {
             return type;
         }
@@ -87,7 +89,7 @@ public class VM_Private extends VM{
         @Override
         public boolean equals(Object o) {
                 if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
+                if (o == null) return false;
                 VM_Private that = (VM_Private) o;
                 return id == that.id && type == that.type && Objects.equals(tasks, that.tasks);
         }
@@ -95,5 +97,9 @@ public class VM_Private extends VM{
         @Override
         public int hashCode() {
                 return Objects.hash(id, type, tasks);
+        }
+
+        public String getAttribute(){
+                return "Private";
         }
 }

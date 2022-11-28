@@ -1,12 +1,17 @@
 package setting;
 
+import contentionAware.Channel;
+
 import java.util.*;
 
 public class Workflow {
 
-    private List<Task> list;	//按照blevel排序
+    private List<Task> list;
 
+    //sequentialLength is used to calculate Speedup
     private double sequentialLength, CCR;
+    private double speedUp;
+
     private TProperties b_levels, s_Levels,PEFT_levels,c_levels;
     //used to accelerate searching a task index in the workflow
     private HashMap<Task, Integer> taskIndices = new HashMap<>();
@@ -36,7 +41,7 @@ public class Workflow {
         System.out.println("succeed to read a workflow from " + file);
         list = topoSort(list.get(0));   //为什么先拓扑排序后按gamma排序，直接gamma排序不行吗。后续懂了：gamma排序也是基于拓扑排序
 
-        setPrivacy(list);  //设置隐私，在Workflow类里面设置，就无需在CCSH算法里面设置了。
+        setPrivacy(list,ProjectCofig.betaType);  //设置隐私，在Workflow类里面设置，就无需在CCSH算法里面设置了。
 
 
         int maxOutd = 0;
@@ -52,9 +57,9 @@ public class Workflow {
         c_levels = new TProperties(this,TProperties.Type.C_LEVEL);
         Collections.sort(list, c_levels);
         Collections.reverse(list);
-        System.out.println("topological sort and clevel");
-        for (Task t : list)
-            System.out.println(t.getName() + "\t" + c_levels.get(t));
+        //System.out.println("topological sort and clevel");
+//        for (Task t : list)
+//            System.out.println(t.getName() + "\t" + c_levels.get(t));
 
         for(int i = 0;i< list.size();i++){
             Task t = list.get(i);
@@ -76,34 +81,17 @@ public class Workflow {
                 //如果前面的小于后面的，则返回-1，小的在前
             }
         }
-        ;
-        /*
-        for (Task t : list) {
-            t.sortEdges(Task.TEdges.IN, new EComparator(false));
-            t.sortEdges(Task.TEdges.OUT, new EComparator(true));
-        }    //sort edges for each task，这个排序就是按gamma来的，优先级高的在前面，优先级低的在后面
 
 
-         */
-        double taskSizeSum = 0, edgeSizeSum = 0;
-        int edgeNum = 0;
-        for (Task task : list) {
-            taskSizeSum += task.getTaskSize();
-            for (Edge outEdge : task.getOutEdges()) {
-                edgeSizeSum += outEdge.getDataSize();
-                edgeNum++;
-            }
-        }
-        //需要后期改
-        /*
-        CCR = edgeSizeSum / edgeNum / VM.NETWORK_SPEED;
-        CCR = CCR / (taskSizeSum / list.size() / VM.SPEEDS[VM.FASTEST]);
-        sequentialLength = taskSizeSum / VM.SPEEDS[VM.FASTEST];
+        //设置CCR
+        setCCRInHybridCloud();
         //序列长度
         System.out.println("CCR is " + CCR);
-        */
-
+        setSequentialLength();
+        System.out.println("workflow's sequentialLength is " + sequentialLength);
+        System.out.println("workflow's critial task path:"+ getCPTaskLength());
     }
+
 
     private List<Task> topoSort(Task entry) {
         // Empty list that will contain the sorted elements
@@ -126,51 +114,68 @@ public class Workflow {
         return topoList;
     }
 
-    private List<Task> setPrivacy(List<Task> tasks){
+    private List<Task> setPrivacy(List<Task> tasks, int betaType){
+        if(betaType == 0){
+            //设置随机数B=0.1，如果任务大小是50，则设置其中5个任务为私有任务
+            double beta = ProjectCofig.beta;
+            Random ran = new Random();
+            ran.setSeed(ProjectCofig.seed);
+            Set<Integer> set = new TreeSet<>();
+            while(true){
+                int a = ran.nextInt(ProjectCofig.bound);
+                set.add(a);
+                int privacyMaxsize = (int)(tasks.size()*beta);
+                if(set.size()>=privacyMaxsize){
+                    break;
+                }
+            }
 
-        //设置随机数B=0.1，如果任务大小是50，则设置其中5个任务为私有任务
-        double beta = 0.2;
-        Random ran = new Random();
-        ran.setSeed(4);
-        Set<Integer> set = new TreeSet<>();
-        while(true){
-            int a = ran.nextInt(50);
-            set.add(a);
-            int privacyMaxsize = (int)(tasks.size()*beta);
-            if(set.size()>=privacyMaxsize){
-                break;
+            for (int i = 0; i < tasks.size(); i++) {
+                Task task = tasks.get(i);
+                task.setRunOnPrivateOrPublic(false);
+
+                if(task.getName().equals("exit") || task.getName().equals("entry")) continue;
+                Integer number=Integer.valueOf(task.getName().substring(2));
+                if(set.contains(number)){
+                    task.setRunOnPrivateOrPublic(true);
+                }
             }
         }
 
-        for (int i = 0; i < tasks.size(); i++) {
-            Task task = tasks.get(i);
-            task.setRunOnPrivateOrPublic(false);
+        else if(betaType == 1){
+            //对特定任务设置隐私
+            for (int i = 0; i < tasks.size(); i++) {
+                Task task = tasks.get(i);
+                task.setRunOnPrivateOrPublic(false);
+    ////            if(task.getName().equals(("ID00001")) || task.getName().equals(("ID00002")) || task.getName().equals(("ID00049"))){
+    ////                task.setRunOnPrivateOrPublic(true);
+    ////            }
+    //            //dot5
+    ////            if(task.getName().equals(("1")) || task.getName().equals(("2")) || task.getName().equals(("9"))){
+    ////                task.setRunOnPrivateOrPublic(true);
+    ////            }
+    //            //dot6
+                if( task.getName().equals(("1")) || task.getName().equals(("2")) || task.getName().equals(("9")) || task.getName().equals(("8"))){
+                    task.setRunOnPrivateOrPublic(true);
+                }
 
-            if(task.getName().equals("exit") || task.getName().equals("entry")) continue;
-            Integer number=Integer.valueOf(task.getName().substring(2));
-            if(set.contains(number)){
-                task.setRunOnPrivateOrPublic(true);
             }
         }
-
-
-        //对特定任务设置隐私
-//        for (int i = 0; i < tasks.size(); i++) {
-//            Task task = tasks.get(i);
-//            task.setRunOnPrivateOrPublic(false);
-////            if(task.getName().equals(("ID00001")) || task.getName().equals(("ID00002")) || task.getName().equals(("ID00049"))){
-////                task.setRunOnPrivateOrPublic(true);
-////            }
-//            //dot5
-////            if(task.getName().equals(("1")) || task.getName().equals(("2")) || task.getName().equals(("9"))){
-////                task.setRunOnPrivateOrPublic(true);
-////            }
-//            //dot6
-//            if( task.getName().equals(("1")) || task.getName().equals(("2")) || task.getName().equals(("9")) || task.getName().equals(("8"))){
-//                task.setRunOnPrivateOrPublic(true);
-//            }
-//        }
         return tasks;
+    }
+
+    //混合云中计算sequentialLength
+    public void setSequentialLength(){
+        sequentialLength = 0;
+        for(Task task : list){
+            if(task.getRunOnPrivateOrPublic() == true){
+                sequentialLength +=task.getTaskSize()/VM_Private.SPEEDS[VM_Private.SLOWEST];
+            }
+            else{
+                sequentialLength += task.getTaskSize()/VM_Public.SPEEDS[VM_Public.FASTEST];
+            }
+        }
+        return;
     }
 
 
@@ -196,7 +201,7 @@ public class Workflow {
     public List<Task> getTaskList(){
         return Collections.unmodifiableList(list);
     }
-    public double getSequentialLength() {	return sequentialLength;	}
+
     public double getCCR() {	return CCR;	}
     public double getCPLength() {
         return b_levels.get(this.getEntryTask());
@@ -210,8 +215,10 @@ public class Workflow {
     //only used in Clevel.Caculate max out degree of the graph
     public static int maxOutd=0;
 
-    public void setSequentialLength(){
-        return;
+
+
+    public double getSequentialLength(){
+        return sequentialLength;
     }
 
     //local test
@@ -223,7 +230,46 @@ public class Workflow {
 //		GraphViz.convertDOTFileToImageFile("D:\\Genome-50.dot", "png", "D:\\SoyKB-50.png");
     }
 
+    //混合云环境下的CCR
+    private void setCCRInHybridCloud(){
+        double sensitiveTaskSizeSum = 0,insensitiveTaskSizeSum=0, edgeSizeSum = 0;
+        int sensitiveTaskNumber=0,insensitiveTaskNumber=0;
+        int edgeNum = 0;
+        for (Task task : list) {
+            if(task.getRunOnPrivateOrPublic()==true){
+                sensitiveTaskSizeSum+=task.getTaskSize();
+                sensitiveTaskNumber++;
+            }
+            else{
+                insensitiveTaskSizeSum+=task.getTaskSize();
+                insensitiveTaskNumber++;
+            }
+            for (Edge outEdge : task.getOutEdges()) {
+                edgeSizeSum += outEdge.getDataSize();
+                edgeNum++;
+            }
+        }
+        CCR = edgeSizeSum / edgeNum / Channel.getTransferSpeed();
+        System.out.println((sensitiveTaskSizeSum / VM_Private.SPEEDS[VM_Private.SLOWEST])/sensitiveTaskNumber);
+        CCR = CCR / ((sensitiveTaskSizeSum / VM_Private.SPEEDS[VM_Private.SLOWEST])/sensitiveTaskNumber
+                +(insensitiveTaskSizeSum/VM_Public.SPEEDS[VM_Public.FASTEST])/insensitiveTaskNumber);
+    }
 
+    //单一云环境下的CCR
+    private void setCCRInSingleCloud(){
+        double taskSizeSum = 0, edgeSizeSum = 0;
+        int edgeNum = 0;
+        for (Task task : list) {
+            taskSizeSum += task.getTaskSize();
+            for (Edge outEdge : task.getOutEdges()) {
+                edgeSizeSum += outEdge.getDataSize();
+                edgeNum++;
+            }
+        }
+        //需要后期改
+        CCR = edgeSizeSum / edgeNum / VM.NETWORK_SPEED;
+        CCR = CCR / (taskSizeSum / list.size() / VM.SPEEDS[VM.FASTEST]);
+    }
 
 
 

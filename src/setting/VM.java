@@ -53,11 +53,13 @@ public  class  VM {
     //------------------------getters && setters---------------------------
     public double getSpeed(){		return SPEEDS[type];	}
     public double getUnitCost(){		return UNIT_COSTS[type];	}
-    public int getId() {		return id;	}
+    public Integer getId() {		return id;	}
     public int getType() {		return type;	}
     public void setType(int type) {			this.type = type;	}
 
-
+    public String getAttribute(){
+        return "None";
+    }
 
 
     //-------------------------------------overrides--------------------------------

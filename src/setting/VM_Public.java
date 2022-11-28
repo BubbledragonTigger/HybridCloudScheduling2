@@ -42,7 +42,7 @@ public class VM_Public extends VM{
         return UNIT_COSTS[type];
     }
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
@@ -63,7 +63,9 @@ public class VM_Public extends VM{
     public void setTasks(Task task){
         tasks.add(task);
     }
-
+    public void removeTask(Task task){
+        tasks.remove(task);
+    }
     public void setTasks(ArrayList<Task> tasks) {
         this.tasks = tasks;
     }
@@ -83,7 +85,7 @@ public class VM_Public extends VM{
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+       if (o == null ) return false;
         VM_Public vm_public = (VM_Public) o;
         return id == vm_public.id && type == vm_public.type && Objects.equals(tasks, vm_public.tasks);
     }
@@ -91,5 +93,9 @@ public class VM_Public extends VM{
     @Override
     public int hashCode() {
         return Objects.hash(id, type, tasks);
+    }
+
+    public String getAttribute(){
+        return "Public";
     }
 }

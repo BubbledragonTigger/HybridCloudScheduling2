@@ -36,7 +36,6 @@ public class TAllocation extends Allocation {
 	private VM_Public publicVM;
 	protected TAllocation(){}
 	public TAllocation(VM_Public publicVM,VM_Private privateVM, Task task, double startTime,double speed) {
-		this.vm = vm;
 		this.task = task;
 		this.startTime = startTime;
 		this.publicVM = publicVM;
@@ -49,6 +48,7 @@ public class TAllocation extends Allocation {
 	public VM getVM(){
 		return vm;
 	}
+
 	public Task getTask() {
 		return task;
 	}
@@ -63,9 +63,13 @@ public class TAllocation extends Allocation {
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (o == null ) return false;
 		TAllocation that = (TAllocation) o;
-		return Objects.equals(task, that.task) && Objects.equals(vm, that.vm);
+		return task.getName().equals(task.getName()) &&
+				vm.getAttribute().equals(that.getVM().getAttribute())
+				&& vm.getId().equals(that.getVM().getId())
+				&&Objects.equals(startTime, that.startTime)
+				&&Objects.equals(finishTime, that.finishTime);
 	}
 
 	@Override

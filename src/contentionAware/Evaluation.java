@@ -6,8 +6,14 @@ import java.util.ArrayList;
 import java.util.List;
 public class Evaluation {
     public static void main(String[] args) throws IOException {
-        test("D:\\workflowSamples\\LIGO\\LIGO.n.50.1.dax",false);  //真实工作流
-        //test("D:\\example_7.dot",true);  //模拟工作流
+        // test("D:\\workflowSamples\\MONTAGE\\MONTAGE.n.100.0.dax",false);  //真实工作流
+        //多个算法使用
+//        for(int i = 0;i<ProjectCofig.types.length;i++){
+//            tests(ProjectCofig.path,false,ProjectCofig.types[i]);
+//        }
+        //单个算法使用
+        //test(ProjectCofig.path,false);  //真实工作流
+        test("D:\\example_7.dot",true);  //模拟工作流
 
 
     }
@@ -20,7 +26,8 @@ public class Evaluation {
         CCSH ccsh = new CCSH();
         long t1 = System.currentTimeMillis();
 
-        list.add(ccsh.listSchedule(wf, TProperties.Type.C_LEVEL, 1));
+
+        list.add(ccsh.listSchedule(wf, ProjectCofig.type,2));
         long t2 = System.currentTimeMillis();
 
         System.out.println("runTime: " +  (t2-t1));
@@ -35,10 +42,11 @@ public class Evaluation {
 //        }
         //used for data collection
         result += wf.getSequentialLength() +"\t" + wf.getCPTaskLength()+"\t" + wf.getCCR();
-        System.out.println(result);
+        //System.out.println(result);
 
         String[] rtnValues = {result, runtime};
+        list.clear();
+
         return rtnValues;
     }
-
 }

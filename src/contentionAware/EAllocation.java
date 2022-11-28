@@ -1,8 +1,11 @@
 package contentionAware;
 
 import contentionFree.Allocation;
+import contentionFree.TAllocation;
 import setting.Edge;
 import setting.VM;
+
+import java.util.Objects;
 
 /**
  * Edge Allocation Information
@@ -54,8 +57,16 @@ public class EAllocation extends Allocation{
 	public VM getDestVM() {	return destVM;		}
 	
 	//----------------------------override-----------------------------------
-    public boolean equals(Object obj) {		
-    	return this == obj;
+    public boolean equals(Object o) {
+
+		if (this == o) return true;
+		EAllocation that = (EAllocation) o;
+		return sourceVM.getAttribute().equals(that.getSourceVM().getAttribute())
+				&&sourceVM.getId().equals(that.getSourceVM().getId())
+				&&destVM.getId().equals(that.getDestVM().getId())
+				&&destVM.getAttribute().equals(that.getDestVM().getAttribute())
+				&&Math.abs(startTime- that.startTime)<=0.0001
+				&&Math.abs(finishTime- that.finishTime)<=0.0001;
     }
 	public String toString() {
 		return "EAllocation [edge = " + edge.getSource().getName()+ " -> " 

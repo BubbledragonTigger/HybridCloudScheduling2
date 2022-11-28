@@ -15,7 +15,235 @@ public class ChannelAdaptor {
     private Channel downloadChannel = new Channel("downloadChannel");
     public static enum UpOrDown{UP,DOWN,NULL};
 
-    public void buildFromSolutionShared(ChannelSolution channelSolution, Workflow wf){
+    /**
+     * reschedule
+     * @param channelSolution
+     * @param wf
+     * @return
+     */
+    public ChannelSolution buildFromSolutionExclusive(ChannelSolution channelSolution, Workflow wf,TProperties.Type type){
+        //将PrivateVM和PublicVM转成 VM；
+        for(TAllocation tAllocation: channelSolution.gettAllocations()){
+            if(tAllocation.getPrivateVM() != null)
+                tAllocation.setVM(tAllocation.getPrivateVM()) ;
+            else
+                tAllocation.setVM(tAllocation.getPublicVM());
+        }
+
+        ChannelSolution newChannelSolution = new ChannelSolution();
+        HashMap<Task , Integer> inEdgeCounts = new HashMap<Task, Integer>();
+        final HashMap<Task, Double> props = new TProperties(wf,type);
+
+        //waitingEdges: whose source tasks have finished and waiting for allocating bandwidth resources
+
+        TreeSet<CASnapshot> waitingEdgesUploadSnaps = new TreeSet<>((CASnapshot a, CASnapshot b) ->{
+            double a1 = props.get(a.getEdge().getDestination());
+            double b1 = props.get(b.getEdge().getDestination());
+            //double a1 =- a.getEdge().getDataSize();
+            //double b1 = -b.getEdge().getDataSize();
+            int i = Double.compare(a1, b1);
+            return i!=0 ? -1*i : 1;		// equality is not allowed, 否则会出现覆盖
+        });
+        TreeSet<CASnapshot> waitingEdgesDownloadSnaps = new TreeSet<>((CASnapshot a, CASnapshot b) ->{
+//            double a1 = props.get(a.getEdge().getDestination());
+//            double b1 = props.get(b.getEdge().getDestination());
+            double a1 = -a.getEdge().getDataSize();
+            double b1 = -b.getEdge().getDataSize();
+            int i = Double.compare(a1, b1);
+            return i!=0 ? -1*i : 1;		// equality is not allowed, 否则会出现覆盖
+        });
+        TreeSet<CASnapshot> waitingEdges = new TreeSet<>((CASnapshot a, CASnapshot b) ->{
+            double a1 = props.get(a.getEdge().getDestination());
+            double b1 = props.get(b.getEdge().getDestination());
+            int i = Double.compare(a1, b1);
+            return i!=0 ? -1*i : 1;		// equality is not allowed, 否则会出现覆盖
+        });
+        TreeSet<CASnapshot> waitingAllEdges = new TreeSet<>((CASnapshot a, CASnapshot b) ->{
+            double a1 = props.get(a.getEdge().getDestination());
+            double b1 = props.get(b.getEdge().getDestination());
+            int i = Double.compare(a1, b1);
+            return i!=0 ? -1*i : 1;		// equality is not allowed, 否则会出现覆盖
+        });
+
+
+
+        List<CASnapshot> ingEdgeUploadSnaps = new ArrayList<>();  //记录通过上传通道的边
+        List<CASnapshot> ingEdgeDownloadSnaps = new ArrayList<>();  //记录通过上传通道的边
+        List<CASnapshot> ingEdgeSnaps = new ArrayList<>();  //不包含ingEdgeUploadSnaps和ingEdgeDownloadSnaps
+        List<CASnapshot> ingallEdgeSnaps = new ArrayList<>();
+
+
+        PriorityQueue<TAllocation> ingTasks = new PriorityQueue<>((TAllocation a, TAllocation b) -> {
+            return Double.compare(a.getFinishTime(), b.getFinishTime());
+        });
+        TAllocation allocEntry = channelSolution.getFirstTA(wf.getEntryTask());
+        ingTasks.add(allocEntry);
+
+        copyTAllocation(allocEntry,0,newChannelSolution);
+
+        double currentTime = 0;//the current time during simulating execution via tc
+        //Each one in ingTasks and ingEdgeSnaps is in execution
+        //任务的结束时间是直接确定的，边的结束时间要动态确定——未确定的时候设为最大值
+        //In each iteration, an edge or task finishes execution, and updates currentTime to its finish time
+        while(ingTasks.size()>0 || ingallEdgeSnaps.size() > 0){ //line3
+            CASnapshot curES = null;
+            for(CASnapshot tempES : ingallEdgeSnaps){
+                if(curES == null || tempES.getRequiredTime() < curES.getRequiredTime()){
+                    curES = tempES;
+                }
+            }
+            TAllocation curTAlloc = ingTasks.peek();
+            recordUpOrDownChannel(new HashSet<CASnapshot>(ingEdgeSnaps),new HashSet<CASnapshot>(ingEdgeUploadSnaps)
+                    ,new HashSet<CASnapshot>(ingEdgeDownloadSnaps),currentTime,4);
+            if(curTAlloc == null || curES!= null && curES.getRequiredTime() < curTAlloc.getFinishTime()-currentTime){
+                //line5
+                ingallEdgeSnaps.remove(curES);
+                Edge curEdge = curES.getEdge();
+                double timeDiff = curES.getRequiredTime();
+
+                if(!(ingEdgeUploadSnaps.contains(curES) || ingEdgeDownloadSnaps.contains(curES))){
+
+                    ingEdgeSnaps.remove(curES);
+
+
+                    for(CASnapshot eaSnapshot: ingEdgeSnaps) {
+                        eaSnapshot.dataSubstract(timeDiff);
+                    }
+                    for(CASnapshot caSnapshot : ingEdgeDownloadSnaps){
+                        caSnapshot.dataSubstract(timeDiff);
+                    }
+                    for(CASnapshot caSnapshot : ingEdgeUploadSnaps){
+                        caSnapshot.dataSubstract(timeDiff);
+                    }
+
+                    //add to newChannelSolution
+                    EAllocation ealloc = new EAllocation(curEdge,curES.getsVM(),curES.getdVM()  //因为有finishTIme,速度无需计算
+                            ,currentTime,-1,currentTime + timeDiff);
+                    copyEAllocation(ealloc,newChannelSolution,UpOrDown.NULL);
+
+                    //re-determine bandwidth for ingEdgeSnaps
+                    determinePortionReschedule(new HashSet<CASnapshot>(ingEdgeSnaps),new HashSet<CASnapshot>(ingEdgeUploadSnaps)
+                            ,new HashSet<CASnapshot>(ingEdgeDownloadSnaps),UpOrDown.NULL,timeDiff,currentTime);
+                }
+                else if(ingEdgeUploadSnaps.contains(curES)){
+
+                    ingEdgeUploadSnaps.remove(curES);
+                    for(CASnapshot eaSnapshot: ingEdgeSnaps) {
+                        eaSnapshot.dataSubstract(timeDiff);
+                    }
+                    for(CASnapshot caSnapshot : ingEdgeDownloadSnaps){
+                        caSnapshot.dataSubstract(timeDiff);
+                    }
+                    for(CASnapshot caSnapshot : ingEdgeUploadSnaps){
+                        caSnapshot.dataSubstract(timeDiff);
+                    }
+
+                    //add to newChannelSolution
+                    EAllocation ealloc = new EAllocation(curEdge,curES.getsVM(),curES.getdVM()  //因为有finishTIme,速度无需计算,这里直接写成-1
+                            ,currentTime,-1,currentTime + timeDiff);
+                    copyEAllocation(ealloc,newChannelSolution,UpOrDown.UP);
+                    //re-determine bandwidth for ingEdgeSnaps
+                    determinePortionReschedule(new HashSet<CASnapshot>(ingEdgeSnaps),new HashSet<CASnapshot>(ingEdgeUploadSnaps)
+                            ,new HashSet<CASnapshot>(ingEdgeDownloadSnaps),UpOrDown.UP,timeDiff,currentTime);
+                }
+                else{
+                    ingEdgeDownloadSnaps.remove(curES);
+                    //add to newChannelSolution
+
+                    for(CASnapshot eaSnapshot: ingEdgeSnaps) {
+                        eaSnapshot.dataSubstract(timeDiff);
+                    }
+
+                    for(CASnapshot caSnapshot : ingEdgeDownloadSnaps){
+                        caSnapshot.dataSubstract(timeDiff);
+                    }
+                    for(CASnapshot caSnapshot : ingEdgeUploadSnaps){
+                        caSnapshot.dataSubstract(timeDiff);
+                    }
+
+                    EAllocation ealloc = new EAllocation(curEdge,curES.getsVM(),curES.getdVM()  //因为有finishTIme,速度无需计算,这里直接写成-1
+                            ,currentTime,-1,currentTime + timeDiff);
+                    copyEAllocation(ealloc,newChannelSolution,UpOrDown.DOWN);
+                    //re-determine bandwidth for ingEdgeSnaps
+                    determinePortionReschedule(new HashSet<CASnapshot>(ingEdgeSnaps),new HashSet<CASnapshot>(ingEdgeUploadSnaps)
+                            ,new HashSet<CASnapshot>(ingEdgeDownloadSnaps),UpOrDown.DOWN,timeDiff,currentTime);
+                }
+                currentTime = currentTime + timeDiff;
+                Task dTask = curEdge.getDestination();
+                Integer count = inEdgeCounts.get(dTask);
+                inEdgeCounts.put(dTask, count != null ? count+1 : 1);
+                if(inEdgeCounts.get(dTask) == dTask.getInEdges().size()) {//all inEdges of dTask have finished
+                    VM dVM = channelSolution.getFirstTA(dTask).getVM();
+                    double startTime = Math.max(currentTime, channelSolution.getVMFinishTime(dVM));
+                    TAllocation alloc = channelSolution.addTaskToVMEnd(dVM,dTask,startTime);
+                    ingTasks.add(alloc);
+                    newChannelSolution.gettAllocations().add(alloc);
+                }
+            }
+            else{
+                ingTasks.poll();
+                double timeDiff = curTAlloc.getFinishTime() -currentTime;
+
+                currentTime = currentTime + timeDiff;
+
+                for(CASnapshot eaSnapshot: ingEdgeSnaps) {
+                    eaSnapshot.dataSubstract(timeDiff);
+                }
+                for(CASnapshot caSnapshot : ingEdgeDownloadSnaps){
+                    caSnapshot.dataSubstract(timeDiff);
+                }
+                for(CASnapshot caSnapshot : ingEdgeUploadSnaps){
+                    caSnapshot.dataSubstract(timeDiff);
+                }
+
+                for(Edge outEdge : curTAlloc.getTask().getOutEdges()){
+                    Task dTask = outEdge.getDestination();
+                    TAllocation dAlloc = channelSolution.getFirstTA(dTask);
+                    double dataSize = curTAlloc.getVM() == dAlloc.getVM() ? 0 : outEdge.getDataSize();
+                    CASnapshot snap = new CASnapshot(outEdge, curTAlloc.getVM(), dAlloc.getVM(),
+                            currentTime, dataSize);
+
+                    if((outEdge.getSource().getRunOnPrivateOrPublic() == true && outEdge.getDestination().getRunOnPrivateOrPublic() == true)
+                            || (outEdge.getSource().getRunOnPrivateOrPublic() == false && outEdge.getDestination().getRunOnPrivateOrPublic() == false))
+                        //ingEdgeSnaps.add(snap);
+                        ingEdgeSnaps.add(snap);
+                    else if(outEdge.getSource().getRunOnPrivateOrPublic() == true && outEdge.getDestination().getRunOnPrivateOrPublic() == false)
+                        waitingEdgesUploadSnaps.add(snap);
+                    else
+                        waitingEdgesDownloadSnaps.add(snap);
+                }
+                determinePortionReschedule(new HashSet<CASnapshot>(ingEdgeSnaps),new HashSet<CASnapshot>(ingEdgeUploadSnaps)
+                        ,new HashSet<CASnapshot>(ingEdgeDownloadSnaps),UpOrDown.NULL,timeDiff,currentTime);  //所有的边的数量和之前一样，所以直接设置为null就可以
+
+                //update remDataSize for ingEdgeSnaps
+            }
+            ingallEdgeSnaps.clear();
+            if(ingEdgeUploadSnaps.size()==0){
+                if(waitingEdgesUploadSnaps.size()!=0)
+                    ingEdgeUploadSnaps.add(waitingEdgesUploadSnaps.pollFirst()) ;
+            }
+            if(ingEdgeDownloadSnaps.size()==0){
+                if(waitingEdgesDownloadSnaps.size()!=0)
+                    ingEdgeDownloadSnaps.add(waitingEdgesDownloadSnaps.pollFirst()) ;
+            }
+            ingallEdgeSnaps.addAll(ingEdgeDownloadSnaps);
+            ingallEdgeSnaps.addAll(ingEdgeUploadSnaps);
+            ingallEdgeSnaps.addAll(ingEdgeSnaps);
+
+        }
+
+        System.out.println(" adaptorReschedule finished");
+        return newChannelSolution;
+
+    }
+
+    /**
+     * 共享式
+     * @param channelSolution
+     * @param wf
+     * @return
+     */
+    public ChannelSolution buildFromSolutionShared(ChannelSolution channelSolution, Workflow wf){
         //将PrivateVM和PublicVM转成 VM；
         for(TAllocation tAllocation: channelSolution.gettAllocations()){
             if(tAllocation.getPrivateVM() != null)
@@ -184,9 +412,8 @@ public class ChannelAdaptor {
             ingallEdgeSnaps.addAll(ingEdgeSnaps);
         }
 
-        System.out.println(" adaptor finished");
-        System.out.println("e:"+channelSolution.gettAllocations().get(channelSolution.gettAllocations().size()-1).getFinishTime());
-        System.out.println("a:"+newChannelSolution.gettAllocations().get(channelSolution.gettAllocations().size()-1).getFinishTime());
+        System.out.println(" adaptorShared finished");
+        return newChannelSolution;
     }
 
 
@@ -208,6 +435,27 @@ public class ChannelAdaptor {
         }
         for(CASnapshot caSnapshot : ingEdgeDownloadSnaps){
             caSnapshot.setBandwidth(Channel.getTransferSpeed() / ingEdgeDownloadSnaps.size());
+        }
+    }
+
+    private void determinePortionReschedule(HashSet<CASnapshot> ingEASnaps,HashSet<CASnapshot>
+            ingEdgeUploadSnaps,HashSet<CASnapshot> ingEdgeDownloadSnaps,Enum type,double timeDiff,double currentTime){
+
+        int upSnapNumber = ingEdgeUploadSnaps.size();
+        int downSnapNumber = ingEdgeDownloadSnaps.size();
+        //if(type == UpOrDown.UP) upSnapNumber = upSnapNumber;  //因为一开始ingEdgeUploadSnaps中去掉了最早执行的边,所以要+1
+        //if(type == UpOrDown.DOWN) downSnapNumber = downSnapNumber;
+        //对EASnaps,ingEdgeUploadSnaps,ingEdgeDownloadSnaps有不同的处理
+        //首先ingEASnaps
+
+        for(CASnapshot eaSnapshot: ingEASnaps){
+            eaSnapshot.setBandwidth(VM.NETWORK_SPEED);
+        }
+        for(CASnapshot caSnapshot: ingEdgeUploadSnaps){
+            caSnapshot.setBandwidth(Channel.getTransferSpeed()/ingEdgeUploadSnaps.size());
+        }
+        for(CASnapshot caSnapshot : ingEdgeDownloadSnaps){
+            caSnapshot.setBandwidth(Channel.getTransferSpeed()/ingEdgeDownloadSnaps.size());
         }
     }
 

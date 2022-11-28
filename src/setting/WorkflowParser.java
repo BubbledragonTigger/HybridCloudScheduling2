@@ -83,8 +83,8 @@ public class WorkflowParser {
 					e.setDataSize(td.getSize());
 					source.insertEdge(Task.TEdges.OUT, e);
 					destination.insertEdge(Task.TEdges.IN, e);
-					System.out.println("**************add a control flow*******************source: "
-							+e.getSource().getName()+"; destination: "+e.getDestination().getName());
+					//System.out.println("**************add a control flow*******************source: "
+					//		+e.getSource().getName()+"; destination: "+e.getDestination().getName());
 				}
 			}
 		}

@@ -16,7 +16,6 @@ import java.util.Map.Entry;
  * It can be a partial / intermediate solution, or a whole one
  * 它可以是部分/中间解决方案，也可以是整个解决方案
  *
- * @author wu
  */
 public class Solution {
 

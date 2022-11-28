@@ -12,8 +12,11 @@ import static java.lang.Math.random;
 // Task properties: heuristic information of tasks, e.g., bLvel, tLevel, gamma, Probabilistic Upward Rank
 public class TProperties extends HashMap<Task,Double> implements Comparator<Task>{
     //TProperties Type
+
+
     public static enum Type{B_LEVEL, T_LEVEL, S_LEVEL, PU_RANK, GAMMA, PEFT, IPPTS, C_LEVEL}
     Workflow wf;
+
     public TProperties(Workflow wf, Type type){
         super();
         this.wf = wf;
@@ -23,7 +26,7 @@ public class TProperties extends HashMap<Task,Double> implements Comparator<Task
 
 
          */
-        double speed=VM.NETWORK_SPEED;
+        double speed=VM.SPEEDS[VM.FASTEST];;
         if(type == Type.B_LEVEL){
             for(int j= wf.size()-1; j>=0; j--){
                 double bLevel = 0;
@@ -33,10 +36,16 @@ public class TProperties extends HashMap<Task,Double> implements Comparator<Task
                     bLevel = Math.max(bLevel,childBLevel + outEdge.getDataSize() / VM.NETWORK_SPEED);
 
                 }
-                bLevel = bLevel + task.getTaskSize()/speed;
+                if(task.getRunOnPrivateOrPublic() == true){
+                    bLevel = bLevel + VM_Private.SPEEDS[VM_Private.SLOWEST];
+                }
+                else{
+                    bLevel = bLevel + VM_Public.SPEEDS[VM_Public.FASTEST];
+                }
+
                 this.put(task , bLevel);
             }
-        }else if(type == Type.S_LEVEL){
+        }else if(type == Type.S_LEVEL){     //应用于混合云时应考虑任务的隐私属性
             for(int j= wf.size()-1; j>=0; j--){
                 double sLevel = 0;
                 Task task = wf.get(j);
@@ -44,7 +53,12 @@ public class TProperties extends HashMap<Task,Double> implements Comparator<Task
                     Double childSLevel = this.get(outEdge.getDestination());
                     sLevel = Math.max(sLevel, childSLevel);
                 }
-                sLevel += task.getTaskSize() / speed;
+                if(task.getRunOnPrivateOrPublic() == true){
+                    sLevel += task.getTaskSize()/VM_Private.SPEEDS[VM_Private.SLOWEST];
+                }
+                else{
+                    sLevel += task.getTaskSize()/VM_Public.SPEEDS[VM_Public.FASTEST];
+                }
                 this.put(task, sLevel);
             }
         }else if(type == Type.T_LEVEL) {    //T_LEVEL目前还没有使用的

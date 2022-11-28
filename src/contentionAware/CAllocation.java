@@ -143,9 +143,14 @@ public class CAllocation extends Allocation{
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null ) return false;
         CAllocation that = (CAllocation) o;
-        return Double.compare(that.edgeStartTime, edgeStartTime) == 0 && Double.compare(that.edgeFinishTime, edgeFinishTime) == 0 && Objects.equals(task, that.task) && Objects.equals(sourceVM, that.sourceVM) && Objects.equals(destVM, that.destVM) && Objects.equals(edge, that.edge) && Objects.equals(flag, that.flag);
+        return Double.compare(that.edgeStartTime, edgeStartTime) == 0 && Double.compare(that.edgeFinishTime, edgeFinishTime) == 0
+                && sourceVM.getAttribute().equals(that.getSourceVM().getAttribute())
+                &&sourceVM.getId().equals(that.getSourceVM().getId())
+                &&destVM.getId().equals(that.getDestVM().getId())
+                &&destVM.getAttribute().equals(that.getDestVM().getAttribute())
+                && Objects.equals(edge, that.edge) && Objects.equals(flag, that.flag);
     }
 
     @Override
