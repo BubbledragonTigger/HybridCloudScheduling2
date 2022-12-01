@@ -66,7 +66,8 @@ public class EAllocation extends Allocation{
 				&&destVM.getId().equals(that.getDestVM().getId())
 				&&destVM.getAttribute().equals(that.getDestVM().getAttribute())
 				&&Math.abs(startTime- that.startTime)<=0.0001
-				&&Math.abs(finishTime- that.finishTime)<=0.0001;
+				&&Math.abs(finishTime- that.finishTime)<=0.0001
+				&& Objects.equals(edge, that.edge);
     }
 	public String toString() {
 		return "EAllocation [edge = " + edge.getSource().getName()+ " -> " 

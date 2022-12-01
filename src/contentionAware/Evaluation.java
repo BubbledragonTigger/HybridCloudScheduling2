@@ -12,8 +12,8 @@ public class Evaluation {
 //            tests(ProjectCofig.path,false,ProjectCofig.types[i]);
 //        }
         //单个算法使用
-        //test(ProjectCofig.path,false);  //真实工作流
-        test("D:\\example_77.dot",true);  //模拟工作流
+        test(ProjectCofig.path,false);  //真实工作流
+
     }
 
     private static String[] test(String file,boolean visualizeFlag)
@@ -25,7 +25,7 @@ public class Evaluation {
         long t1 = System.currentTimeMillis();
 
 
-        list.add(ccsh.listSchedule(wf, ProjectCofig.type,2));
+        list.add(ccsh.listSchedule(wf, ProjectCofig.type,ProjectCofig.adaptorType));
         long t2 = System.currentTimeMillis();
 
         System.out.println("runTime: " +  (t2-t1));

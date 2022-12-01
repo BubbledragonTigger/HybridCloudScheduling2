@@ -26,6 +26,7 @@ public class CCSH {
     //记录临时分配的边，由于复制调度不得不放全局变量里面
     ArrayList<EAllocation> eAllocationListRecord = new ArrayList<>();
     ArrayList<CAllocation> cAllocationListRecord = new ArrayList<>();
+
     /**
      * static list scheduling for @param wf
      *
@@ -82,7 +83,14 @@ public class CCSH {
                     dupList.clear();
                     tsTask = calcTSTaskWithInsert(task, null, vm, 1);
                     tfTask = tsTask + task.getTaskSize() / vm.getSpeed();
-                    if (tctype == TProperties.Type.PEFT)  //PEFT要让tfTASK额外加上OCT，
+                    if (tctype == TProperties.Type.B_LEVEL) {  //无需给tfTask添加额外的东西
+                        if (type == 2) {  //复制调度
+                            double[] tTask = calcTfTaskWithDup(task, null, vm, dupList, 0, tsTask, tfTask,TProperties.Type.B_LEVEL);
+                            tsTask = tTask[0];
+                            tfTask = tTask[1];
+                        }
+                    }
+                    else if (tctype == TProperties.Type.PEFT)  //PEFT要让tfTASK额外加上OCT，
                     {
                         tfTask = tfTask + task.getOCT()[0];  //私有云上
                     } else if (tctype == TProperties.Type.IPPTS) {
@@ -92,8 +100,8 @@ public class CCSH {
                     } else if (tctype == TProperties.Type.C_LEVEL) {
                         double dft = dFT(task, vm);
                         tfTask = tfTask + dft;
-                        if(type == 2){
-                            double[] tTask=calcTfTaskWithDup(task,null, vm, dupList,dft ,tsTask,tfTask );
+                        if (type == 2) {
+                            double[] tTask = calcTfTaskWithDup(task, null, vm, dupList, dft, tsTask, tfTask,TProperties.Type.C_LEVEL);
                             tsTask = tTask[0];
                             tfTask = tTask[1];
                         }
@@ -105,7 +113,7 @@ public class CCSH {
                         minEFT = tfTask;
                         selectedPrivateVM = vm;
                         selectedPublicVM = null;
-                        if(type==2) selectedDupList = new ArrayList<>(dupList);
+                        if (type == 2) selectedDupList = new ArrayList<>(dupList);
                     }
                 }
 
@@ -117,7 +125,14 @@ public class CCSH {
                     dupList.clear();
                     tsTask = calcTSTaskWithInsert(task, vm, null, 1);
                     tfTask = tsTask + task.getTaskSize() / vm.getSpeed();
-                    if (tctype == TProperties.Type.PEFT)  //PEFT要让tfTASK额外加上OCT，
+                    if (tctype == TProperties.Type.B_LEVEL) {  //无需给tfTask添加额外的东西
+                        if (type == 2) {  //复制调度
+                            double[] tTask = calcTfTaskWithDup(task, vm, null, dupList, 0, tsTask, tfTask,TProperties.Type.B_LEVEL);
+                            tsTask = tTask[0];
+                            tfTask = tTask[1];
+                        }
+                    }
+                    else if (tctype == TProperties.Type.PEFT)  //PEFT要让tfTASK额外加上OCT，
                     {
                         tfTask = tfTask + task.getOCT()[1];  //公有云上
                     } else if (tctype == TProperties.Type.IPPTS) {
@@ -127,8 +142,8 @@ public class CCSH {
                     } else if (tctype == TProperties.Type.C_LEVEL) {
                         double dft = dFT(task, vm);
                         tfTask = tfTask + dft;
-                        if(type == 2){
-                            double[] tTask=calcTfTaskWithDup(task,vm, null, dupList,dft ,tsTask,tfTask );
+                        if (type == 2) {
+                            double[] tTask = calcTfTaskWithDup(task, vm, null, dupList, dft, tsTask, tfTask,TProperties.Type.B_LEVEL);
                             tsTask = tTask[0];
                             tfTask = tTask[1];
                         }
@@ -139,7 +154,7 @@ public class CCSH {
                         minEFT = tfTask;
                         selectedPrivateVM = null;
                         selectedPublicVM = vm;
-                        if(type==2) selectedDupList = new ArrayList<>(dupList);
+                        if (type == 2) selectedDupList = new ArrayList<>(dupList);
                     }
                 }
                 for (VM_Private vm : vmPrivateList) {
@@ -148,7 +163,14 @@ public class CCSH {
                     dupList.clear();
                     tsTask = calcTSTaskWithInsert(task, null, vm, 1);
                     tfTask = tsTask + task.getTaskSize() / vm.getSpeed();
-                    if (tctype == TProperties.Type.PEFT)  //PEFT要让tfTASK额外加上OCT，
+                    if (tctype == TProperties.Type.B_LEVEL) {  //无需给tfTask添加额外的东西
+                        if (type == 2) {  //复制调度
+                            double[] tTask = calcTfTaskWithDup(task, null, vm, dupList, 0, tsTask, tfTask,TProperties.Type.B_LEVEL);
+                            tsTask = tTask[0];
+                            tfTask = tTask[1];
+                        }
+                    }
+                    else if (tctype == TProperties.Type.PEFT)  //PEFT要让tfTASK额外加上OCT，
                     {
                         tfTask = tfTask + task.getOCT()[0];  //私有云上
                     } else if (tctype == TProperties.Type.IPPTS) {
@@ -158,8 +180,8 @@ public class CCSH {
                     } else if (tctype == TProperties.Type.C_LEVEL) {
                         double dft = dFT(task, vm);
                         tfTask = tfTask + dft;
-                        if(type == 2){
-                            double[] tTask=calcTfTaskWithDup(task,null, vm, dupList,dft ,tsTask,tfTask );
+                        if (type == 2) {
+                            double[] tTask = calcTfTaskWithDup(task, null, vm, dupList, dft, tsTask, tfTask, TProperties.Type.C_LEVEL);
                             tsTask = tTask[0];
                             tfTask = tTask[1];
                         }
@@ -170,13 +192,13 @@ public class CCSH {
                         minEFT = tfTask;
                         selectedPrivateVM = vm;
                         selectedPublicVM = null;
-                        if(type==2) selectedDupList = new ArrayList<>(dupList);
+                        if (type == 2) selectedDupList = new ArrayList<>(dupList);
                     }
                 }
             }
-            if(type==2 && selectedDupList!=null&&selectedDupList.size()!=0){
-                for(List<Allocation> alloc : selectedDupList){//要先进行复制，再进行之后的分配，否则边分配会受影响
-                    TAllocation talloc = (TAllocation)(alloc.get(0));
+            if (type == 2 && selectedDupList != null && selectedDupList.size() != 0) {
+                for (List<Allocation> alloc : selectedDupList) {//要先进行复制，再进行之后的分配，否则边分配会受影响
+                    TAllocation talloc = (TAllocation) (alloc.get(0));
 
 
                     if (talloc.getVM().getAttribute().equals("Private")) {
@@ -184,13 +206,13 @@ public class CCSH {
                         p.setPriavteVM(talloc.getPrivateVM());
                         p.setPublicVM(null);
                         p.setRunOnPrivateOrPublic(true);
-                        addTaskEdgesToVM(null, talloc.getPrivateVM(),talloc.getTask(), talloc.getStartTime(),false);
+                        addTaskEdgesToVM(null, talloc.getPrivateVM(), talloc.getTask(), talloc.getStartTime(), false);
                     } else {
                         Task p = talloc.getTask();
                         p.setPriavteVM(null);
                         p.setPublicVM(talloc.getPublicVM());
                         p.setRunOnPrivateOrPublic(false);
-                        addTaskEdgesToVM(talloc.getPublicVM(), null, talloc.getTask(), talloc.getStartTime(),false);
+                        addTaskEdgesToVM(talloc.getPublicVM(), null, talloc.getTask(), talloc.getStartTime(), false);
                     }
                 }
             }
@@ -198,12 +220,12 @@ public class CCSH {
                 task.setPriavteVM(selectedPrivateVM);
                 task.setPublicVM(null);
                 task.setRunOnPrivateOrPublic(true);
-                addTaskEdgesToVM(null, selectedPrivateVM, task, minEST,false);
+                addTaskEdgesToVM(null, selectedPrivateVM, task, minEST, false);
             } else {
                 task.setPriavteVM(null);
                 task.setPublicVM(selectedPublicVM);
                 task.setRunOnPrivateOrPublic(false);
-                addTaskEdgesToVM(selectedPublicVM, null, task, minEST,false);
+                addTaskEdgesToVM(selectedPublicVM, null, task, minEST, false);
             }
 
         }
@@ -234,58 +256,57 @@ public class CCSH {
 
     }
 
-    private double[] calcTfTaskWithDup(Task task, VM_Public publicVM,VM_Private privateVM, List<List<Allocation>> dupList,
-                                     double dFT,double tsTask,double tfTask) {
+    private double[] calcTfTaskWithDup(Task task, VM_Public publicVM, VM_Private privateVM, List<List<Allocation>> dupList,
+                                       double dFT, double tsTask, double tfTask, TProperties.Type algorithmType) {
         List<Task> parentsNotInThisVM = null;
 
-        if(privateVM!=null){
+        if (privateVM != null) {
             parentsNotInThisVM = getParentsNotInVM(task, privateVM);
-            for(Task parent : parentsNotInThisVM){
-                double parentEST = calcTSTaskWithInsert(parent,null,privateVM,1);
-                List<Allocation> parentAlloc = addTaskEdgesToVM(null,privateVM,parent,parentEST,true);
-                double newEST = calcTSTaskWithInsert(task, null,privateVM,1);
-                double newtfTask = newEST + task.getTaskSize()/privateVM.getSpeed() + dFT;
-                if(newtfTask<tfTask) {
+            for (Task parent : parentsNotInThisVM) {
+                double parentEST = calcTSTaskWithInsert(parent, null, privateVM, 1);
+                List<Allocation> parentAlloc = addTaskEdgesToVM(null, privateVM, parent, parentEST, true);
+                double newEST = calcTSTaskWithInsert(task, null, privateVM, 1);
+                double newtfTask = newEST + task.getTaskSize() / privateVM.getSpeed() ;
+                if(algorithmType == TProperties.Type.C_LEVEL) newtfTask = newEST + task.getTaskSize() / privateVM.getSpeed() + dFT;
+                if (newtfTask < tfTask) {
                     tsTask = newEST;
                     tfTask = newtfTask;
                     dupList.add(parentAlloc);
-                }
-                else{
+                } else {
                     rollbackAdd(parentAlloc);
                 }
             }
-        }
-        else{
+        } else {
             parentsNotInThisVM = getParentsNotInVM(task, publicVM);
-            for(Task parent : parentsNotInThisVM){
-                double parentEST = calcTSTaskWithInsert(parent,publicVM,null,1);
-                List<Allocation> parentAlloc = addTaskEdgesToVM(publicVM,null,parent,parentEST,true);
-                double newEST = calcTSTaskWithInsert(task, publicVM,null,1);
-                double newtfTask = newEST + task.getTaskSize()/publicVM.getSpeed() + dFT;
-                if(newtfTask<tfTask) {
+            for (Task parent : parentsNotInThisVM) {
+                double parentEST = calcTSTaskWithInsert(parent, publicVM, null, 1);
+                List<Allocation> parentAlloc = addTaskEdgesToVM(publicVM, null, parent, parentEST, true);
+                double newEST = calcTSTaskWithInsert(task, publicVM, null, 1);
+                double newtfTask = newEST + task.getTaskSize() / publicVM.getSpeed();
+                if(algorithmType == TProperties.Type.C_LEVEL) newtfTask = newEST + task.getTaskSize() / privateVM.getSpeed() + dFT;
+                if (newtfTask < tfTask) {
                     tfTask = newtfTask;
                     tsTask = newEST;
                     dupList.add(parentAlloc);
-                }
-                else{
+                } else {
                     rollbackAdd(parentAlloc);
                 }
             }
         }
-        for(List<Allocation> parentAlloc : dupList)	{	//dupList当中的全部撤销插入
+        for (List<Allocation> parentAlloc : dupList) {    //dupList当中的全部撤销插入
             rollbackAdd(parentAlloc);
         }
-        return new double[] {tsTask,tfTask};
+            return new double[]{tsTask, tfTask};
     }
 
     private void rollbackAdd(List<Allocation> parentAlloc) {
         tAllocationList.remove(parentAlloc.get(0));
         for (Allocation cAllocation : parentAlloc) {
-            if(cAllocation instanceof CAllocation)
+            if (cAllocation instanceof CAllocation)
                 this.cAllocationList.remove(cAllocation);
         }
         for (Allocation eAllocation : parentAlloc) {
-            if(eAllocation instanceof EAllocation)
+            if (eAllocation instanceof EAllocation)
                 this.eAllocationList.remove(eAllocation);
         }
     }
@@ -454,11 +475,11 @@ public class CCSH {
     }
     //private transformCAllocationToCSolution
 
-    private List<Allocation> addTaskEdgesToVM(VM_Public publicVM, VM_Private privateVM, Task task, double startTime,boolean dupTest) {
+    private List<Allocation> addTaskEdgesToVM(VM_Public publicVM, VM_Private privateVM, Task task, double startTime, boolean dupTest) {
         List<Allocation> list = new ArrayList<>();
         //先判断是添加publicVM,还是privateVM,如果当前VM还没有分配Task，那么需要初始化Task列表
         if (publicVM != null) {
-            if(dupTest == false){
+            if (dupTest == false) {
                 if (publicVM.getTasks() == null || publicVM.getTasks().size() == 0) {
                     publicVM.setTasks(new ArrayList<Task>());
                 }
@@ -472,14 +493,14 @@ public class CCSH {
             tAllocation.setVM(publicVM);
             tAllocationList.add(tAllocation);
             list.add(tAllocation);
-            for(EAllocation eAllocation:eAllocationListRecord){
+            for (EAllocation eAllocation : eAllocationListRecord) {
                 list.add(eAllocation);
             }
-            for(CAllocation cAllocation: cAllocationListRecord){
+            for (CAllocation cAllocation : cAllocationListRecord) {
                 list.add(cAllocation);
             }
         } else {
-            if(dupTest == false){
+            if (dupTest == false) {
                 if (privateVM.getTasks() == null || privateVM.getTasks().size() == 0) {
                     privateVM.setTasks(new ArrayList<Task>());
                 }
@@ -492,10 +513,10 @@ public class CCSH {
             tAllocation.setVM(privateVM);
             tAllocationList.add(tAllocation);
             list.add(tAllocation);
-            for(EAllocation eAllocation:eAllocationListRecord){
+            for (EAllocation eAllocation : eAllocationListRecord) {
                 list.add(eAllocation);
             }
-            for(CAllocation cAllocation: cAllocationListRecord){
+            for (CAllocation cAllocation : cAllocationListRecord) {
                 list.add(cAllocation);
             }
         }
@@ -549,10 +570,10 @@ public class CCSH {
             public int compare(Allocation o1, Allocation o2) {
                 double startTime1 = o1.getStartTime();
                 double startTime2 = o2.getStartTime();
-                if(Math.abs(o1.getFinishTime()-o1.getStartTime())<=0.0001){  //防止entryTask影响
+                if (Math.abs(o1.getFinishTime() - o1.getStartTime()) <= 0.0001) {  //防止entryTask影响
                     return -1;
                 }
-                if(Math.abs(o2.getFinishTime()-o2.getStartTime())<=0.0001){  //防止entryTask影响
+                if (Math.abs(o2.getFinishTime() - o2.getStartTime()) <= 0.0001) {  //防止entryTask影响
                     return 1;
                 }
 
@@ -717,13 +738,17 @@ public class CCSH {
 
             //(1)Line4
             List<TAllocation> pTAllocationList = new ArrayList<>();
-            for(TAllocation tAllocation: tAllocationList){
-                if(tAllocation.getTask()==parentTask){
+            for (TAllocation tAllocation : tAllocationList) {
+                if (tAllocation.getTask() == parentTask) {
                     pTAllocationList.add(tAllocation);
                 }
             }
-            double minParentsDAT  = Double.MAX_VALUE;   //针对复制，取到达时间的最小值，再加到DAT中
-            for(TAllocation pTAllocation: pTAllocationList) {
+            //记录当前任务最小的DAT所分配的边和通道;
+            EAllocation minEAllocationRecord =null;
+            CAllocation minCAllocationRecord =null;
+            boolean isSmaller = false;
+            double minParentsDAT = Double.MAX_VALUE;   //针对复制，取到达时间的最小值，再加到DAT中
+            for (TAllocation pTAllocation : pTAllocationList) {
                 parentTask.setPriavteVM(pTAllocation.getPrivateVM());
                 parentTask.setPublicVM(pTAllocation.getPublicVM());
                 parentTask.setRunOnPrivateOrPublic(pTAllocation.getPrivateVM() == null ? false : true);
@@ -736,9 +761,14 @@ public class CCSH {
                     double eFinishTime = eReadyTime;
                     EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPriavteVM(),
                             vl, eReadyTime, VM_Private.NETWORK_SPEED, eFinishTime);
-                    this.eAllocationList.add(eAllocation);
-                    eAllocationListRecord.add(eAllocation);
-                    minParentsDAT = Math.min(minParentsDAT,parentTask.getAFT());
+
+                    if(minParentsDAT>parentTask.getAFT()) {
+                        isSmaller = true;
+                        minEAllocationRecord = eAllocation;
+                        minCAllocationRecord = null;
+                    }
+
+                    minParentsDAT = Math.min(minParentsDAT, parentTask.getAFT());
                     //DAT = Math.max(DAT, parentTask.getAFT());  //line5
                 }
                 //(2)Line6
@@ -750,9 +780,13 @@ public class CCSH {
                     //line8
                     EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPriavteVM(),
                             vl, eReadyTime, VM_Private.NETWORK_SPEED, eFinishTime);
-                    this.eAllocationList.add(eAllocation);
-                    eAllocationListRecord.add(eAllocation);
-                    minParentsDAT = Math.min(minParentsDAT,eFinishTime);
+
+                    if(minParentsDAT>eFinishTime) {
+                        isSmaller = true;
+                        minEAllocationRecord = eAllocation;
+                        minCAllocationRecord = null;
+                    }
+                    minParentsDAT = Math.min(minParentsDAT, eFinishTime);
                     //Line9
                     //DAT = Math.max(DAT, eFinishTime);
                 }
@@ -795,17 +829,18 @@ public class CCSH {
                                             vl, eReadyTime, eFinishTime, -1, -1,
                                             channelDownloadStartTime, channelDownloadFinishTime, false);
                                     //永久分配，最后通过cAllocationListRecord中的记录撤销
-                                    cAllocationList.add(c);
-                                    //暂时分配
-                                    cAllocationListRecord.add(c);
 
                                     //永久分配,这个EAllocation可能以后对画图有帮助，这里暂时记录，其实CAllocation已经包括了,参数VM_Private.NETWORK_SPEED用不到
                                     EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPublicVM(),
                                             vl, eReadyTime, VM_Private.NETWORK_SPEED, eFinishTime);
-                                    this.eAllocationList.add(eAllocation);
-                                    eAllocationListRecord.add(eAllocation);
+
                                     isFinal = false;
-                                    minParentsDAT = Math.min(minParentsDAT,eFinishTime);
+                                    if(minParentsDAT>eFinishTime) {
+                                        isSmaller = true;
+                                        minEAllocationRecord = eAllocation;
+                                        minCAllocationRecord = c;
+                                    }
+                                    minParentsDAT = Math.min(minParentsDAT, eFinishTime);
                                     //DAT = Math.max(DAT, eFinishTime);
                                     break;
                                 }
@@ -823,17 +858,22 @@ public class CCSH {
                                             vl, eReadyTime, eFinishTime, -1, -1,
                                             channelDownloadStartTime, channelDownloadFinishTime, false);
                                     //永久分配，最后通过cAllocationListRecord中的记录撤销
-                                    cAllocationList.add(c);
+                                    //cAllocationList.add(c);
                                     //暂时分配
-                                    cAllocationListRecord.add(c);
+                                    //cAllocationListRecord.add(c);
 
                                     //永久分配,这个EAllocation可能以后对画图有帮助，这里暂时记录，其实CAllocation已经包括了,参数VM_Private.NETWORK_SPEED用不到
                                     EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPublicVM(),
                                             vl, eReadyTime, VM_Private.NETWORK_SPEED, eFinishTime);
-                                    this.eAllocationList.add(eAllocation);
-                                    eAllocationListRecord.add(eAllocation);
+                                    //this.eAllocationList.add(eAllocation);
+                                    //eAllocationListRecord.add(eAllocation);
                                     isFinal = false;
-                                    minParentsDAT = Math.min(minParentsDAT,eFinishTime);
+                                    if(minParentsDAT>eFinishTime){
+                                        isSmaller = true;
+                                        minEAllocationRecord = eAllocation;
+                                        minCAllocationRecord = c;
+                                    }
+                                    minParentsDAT = Math.min(minParentsDAT, eFinishTime);
                                     //DAT = Math.max(DAT, eFinishTime);
                                     break;
                                 }
@@ -857,22 +897,36 @@ public class CCSH {
                                     vl, eReadyTime, eFinishTime, -1, -1,
                                     channelDownloadStartTime, channelDownloadFinishTime, false);
                             //永久分配，最后通过cAllocationListRecord中的记录撤销
-                            cAllocationList.add(c);
+                            //cAllocationList.add(c);
                             //暂时分配
-                            cAllocationListRecord.add(c);
+                            //cAllocationListRecord.add(c);
 
                             //永久分配,这个EAllocation可能以后对画图有帮助，这里暂时记录，其实CAllocation已经包括了,参数VM_Private.NETWORK_SPEED用不到
                             EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPublicVM(),
                                     vl, eReadyTime, VM_Private.NETWORK_SPEED, eFinishTime);
-                            this.eAllocationList.add(eAllocation);
-                            eAllocationListRecord.add(eAllocation);
-                            minParentsDAT = Math.min(minParentsDAT,eFinishTime);
+                            //this.eAllocationList.add(eAllocation);
+                            //eAllocationListRecord.add(eAllocation);
+                            if(minParentsDAT>eFinishTime) {
+                                isSmaller = true;
+                                minEAllocationRecord = eAllocation;
+                                minCAllocationRecord = c;
+                            }
+                            minParentsDAT = Math.min(minParentsDAT, eFinishTime);
                             //DAT = Math.max(DAT, eFinishTime);
                         }
                     }
                 }
+                isSmaller = false;
             }
-            DAT = Math.max(DAT,minParentsDAT);
+            if(minEAllocationRecord!=null){
+                eAllocationList.add(minEAllocationRecord);
+                eAllocationListRecord.add(minEAllocationRecord);
+            }
+            if(minCAllocationRecord!=null){
+                cAllocationList.add(minCAllocationRecord);
+                cAllocationListRecord.add(minCAllocationRecord);
+            }
+            DAT = Math.max(DAT, minParentsDAT);
         }
         //进行回滚操作，true回滚
         if (step == 1) {
@@ -985,30 +1039,36 @@ public class CCSH {
 
             //（1）Line4
             List<TAllocation> pTAllocationList = new ArrayList<>();
-            for(TAllocation tAllocation: tAllocationList){
-                if(tAllocation.getTask()==parentTask){
+            for (TAllocation tAllocation : tAllocationList) {
+                if (tAllocation.getTask() == parentTask) {
                     pTAllocationList.add(tAllocation);
                 }
             }
-            double minParentsDAT  = Double.MAX_VALUE;   //针对复制，取到达时间的最小值，再加到DAT中
-            for(TAllocation pTAllocation: pTAllocationList) {
+            //记录当前任务最小的DAT所分配的边和通道;
+            EAllocation minEAllocationRecord =null;
+            CAllocation minCAllocationRecord =null;
+            boolean isSmaller = false;
+            double minParentsDAT = Double.MAX_VALUE;   //针对复制，取到达时间的最小值，再加到DAT中
+            for (TAllocation pTAllocation : pTAllocationList) {
                 parentTask.setPriavteVM(pTAllocation.getPrivateVM());  //这里其实用tallocation.getPrivateVM()更好，只是之前没想着加复制调度不得已这样做
                 parentTask.setPublicVM(pTAllocation.getPublicVM());
                 parentTask.setRunOnPrivateOrPublic(pTAllocation.getPrivateVM() == null ? false : true);
                 parentTask.setAST(pTAllocation.getStartTime());
                 parentTask.setAFT(pTAllocation.getFinishTime());
-
                 if ((parentTask.getRunOnPrivateOrPublic() == false) && parentTask.getPublicVM() == vl) {
-                    minParentsDAT = Math.min(minParentsDAT,parentTask.getAFT());
-                    //DAT = Math.max(DAT, parentTask.getAFT());  //line5同一个处理器上
-                    double eReadyTime = parentTask.getAFT();
+                    double eReadyTime = parentTask.getAFT();  //同一个处理器上我们也记录边分配
                     double eFinishTime = eReadyTime;
                     EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPublicVM(), vl, eReadyTime, VM_Public.NETWORK_SPEED, eFinishTime);
-                    this.eAllocationList.add(eAllocation);
-                    eAllocationListRecord.add(eAllocation);
+
+                    if(minParentsDAT>parentTask.getAFT()) {
+                        isSmaller = true;
+                        minEAllocationRecord = eAllocation;
+                        minCAllocationRecord = null;
+                    }
+                    minParentsDAT = Math.min(minParentsDAT, parentTask.getAFT());
+                    //DAT = Math.max(DAT, parentTask.getAFT());  //line5同一个处理器上
+
                 }
-
-
                 //(2)Line6
                 else if ((parentTask.getPublicVM() != vl)
                         && (parentTask.getRunOnPrivateOrPublic() == false)) //前面是判断u_i ！= v_l，后面一个相当于异或
@@ -1020,11 +1080,14 @@ public class CCSH {
 
                     //line8
                     EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPublicVM(), vl, eReadyTime, VM_Public.NETWORK_SPEED, eFinishTime);
-                    this.eAllocationList.add(eAllocation);
-                    eAllocationListRecord.add(eAllocation);
 
                     //Line9
-                    minParentsDAT = Math.min(minParentsDAT,eFinishTime);
+                    if(minParentsDAT>eFinishTime) {
+                        isSmaller = true;
+                        minEAllocationRecord = eAllocation;
+                        minCAllocationRecord = null;
+                    }
+                    minParentsDAT = Math.min(minParentsDAT, eFinishTime);
                     //DAT = Math.max(DAT, eFinishTime);
                 }
 
@@ -1072,18 +1135,18 @@ public class CCSH {
                                     CAllocation c = new CAllocation(inEdge, parentTask.getPriavteVM(),
                                             vl, eReadyTime, eFinishTime, channelUploadStartTime, channelUploadFinishTime,
                                             -1, -1, true);
-                                    //永久分配，最后通过cAllocationListRecord中的记录撤销
-                                    cAllocationList.add(c);
-                                    //暂时分配
-                                    cAllocationListRecord.add(c);
+
 
                                     //永久分配,这个EAllocation可能以后对画图有帮助，这里暂时记录，其实CAllocation已经包括了
                                     EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPriavteVM(), vl, eReadyTime, Channel.getTransferSpeed(), eFinishTime);
-                                    this.eAllocationList.add(eAllocation);
 
-                                    eAllocationListRecord.add(eAllocation);
                                     isFinal = false;
-                                    minParentsDAT = Math.min(minParentsDAT,eFinishTime);
+                                    if(minParentsDAT>eFinishTime) {
+                                        isSmaller = true;
+                                        minEAllocationRecord = eAllocation;
+                                        minCAllocationRecord = c;
+                                    }
+                                    minParentsDAT = Math.min(minParentsDAT, eFinishTime);
                                     //DAT = Math.max(DAT, eFinishTime);
                                     break;
                                 }
@@ -1103,17 +1166,17 @@ public class CCSH {
                                             vl, eReadyTime, eFinishTime, channelUploadStartTime, channelUploadFinishTime,
                                             -1, -1, true);
                                     //永久分配，最后通过cAllocationListRecord中的记录撤销
-                                    cAllocationList.add(c);
-                                    //暂时分配
-                                    cAllocationListRecord.add(c);
 
                                     //永久分配,这个EAllocation可能以后对画图有帮助，这里暂时记录，其实CAllocation已经包括了
                                     EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPriavteVM(), vl, eReadyTime, Channel.getTransferSpeed(), eFinishTime);
-                                    this.eAllocationList.add(eAllocation);
 
-                                    eAllocationListRecord.add(eAllocation);
                                     isFinal = false;
-                                    minParentsDAT = Math.min(minParentsDAT,eFinishTime);
+                                    if(minParentsDAT>eFinishTime){
+                                        isSmaller = true;
+                                        minEAllocationRecord = eAllocation;
+                                        minCAllocationRecord = c;
+                                    }
+                                    minParentsDAT = Math.min(minParentsDAT, eFinishTime);
                                     //DAT = Math.max(DAT, eFinishTime);
                                     break;
                                 }
@@ -1138,23 +1201,32 @@ public class CCSH {
                             CAllocation c = new CAllocation(inEdge, parentTask.getPriavteVM(),
                                     vl, eReadyTime, eFinishTime, channelUploadStartTime, channelUploadFinishTime,
                                     -1, -1, true);
-                            //永久分配，最后通过cAllocationListRecord中的记录撤销
-                            cAllocationList.add(c);
-                            //暂时分配
-                            cAllocationListRecord.add(c);
+
 
                             //永久分配,这个EAllocation可能以后对画图有帮助，这里暂时记录，其实CAllocation已经包括了
                             EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPriavteVM(), vl, eReadyTime, Channel.getTransferSpeed(), eFinishTime);
-                            this.eAllocationList.add(eAllocation);
 
-                            eAllocationListRecord.add(eAllocation);
-                            minParentsDAT = Math.min(minParentsDAT,eFinishTime);
+                            if(minParentsDAT>eFinishTime) {
+                                isSmaller = true;
+                                minEAllocationRecord = eAllocation;
+                                minCAllocationRecord = c;
+                            }
+                            minParentsDAT = Math.min(minParentsDAT, eFinishTime);
                             //DAT = Math.max(DAT, eFinishTime);
                         }
                     }
                 }
+                isSmaller = false;
             }
-            DAT = Math.max(DAT,minParentsDAT);
+            if(minEAllocationRecord!=null){
+                eAllocationList.add(minEAllocationRecord);
+                eAllocationListRecord.add(minEAllocationRecord);
+            }
+            if(minCAllocationRecord!=null){
+                cAllocationList.add(minCAllocationRecord);
+                cAllocationListRecord.add(minCAllocationRecord);
+            }
+            DAT = Math.max(DAT, minParentsDAT);
         }
 
         //进行回滚操作，true回滚
@@ -1219,19 +1291,132 @@ public class CCSH {
         return vmList;
     }
 
+    //可以得到跨云复制
     public List<Task> getParentsNotInVM(Task task, VM vm) {
+        List<Edge> edgesNotInThisVM = new ArrayList<Edge>();
+        Map<Task,ArrayList<TAllocation>> parentTaskMap = new HashMap<>();   //由于一个任务的父任务存在复制，所以我们要找到传输时间最短的父任务所在的处理器进行复制
+        Set<Task> deleteParentsTask = new HashSet<>();
+
+        for (Edge edge : task.getInEdges()) {
+            Task parent = edge.getSource();
+            parentTaskMap.put(parent,new ArrayList<>());
+            //需判断父任务的隐私性,如果vm是公有云且父任务私密直接跳过当前
+            if (parent.getRunOnPrivateOrPublic() == true && vm.getAttribute().equals("Public")){
+                parentTaskMap.remove(parent);
+                continue;
+            }
+            for (TAllocation TA : tAllocationList) {
+                if (TA.getTask() == parent) {
+                    //如果这个父任务之前删除过，说明vm里有过这个任务，那就不要添加了
+                    if(!deleteParentsTask.contains(parent))parentTaskMap.get(parent).add(TA);
+                    if (TA.getVM() == vm){
+                        parentTaskMap.remove(parent);
+                        deleteParentsTask.add(parent);
+                    }
+                }
+            }
+        }
+        for (Edge edge : task.getInEdges()) {
+            if(parentTaskMap.keySet().contains(edge.getSource())){
+                edgesNotInThisVM.add(edge);
+            }
+        }
+
+        for(Task edgesNotInThisVMParentTask : parentTaskMap.keySet()){
+            ArrayList<TAllocation> tAllocationArrayList = parentTaskMap.get(edgesNotInThisVMParentTask);
+            //将父任务的数据到达子任务所在处理器时间从小到大排序，到时候取第一个就可
+            Collections.sort(tAllocationArrayList, new Comparator<TAllocation>() {
+                @Override
+                public int compare(TAllocation t1, TAllocation t2) {
+                    if (t1 == null || t2 == null) { //entryTask
+                        return 0;
+                    }
+                    Task p1 = t1.getTask();
+                    Task p2 = t2.getTask();
+                    Edge e1 = null;
+                    Edge e2 = null;
+                    for(Edge edge : task.getInEdges()){
+                        if(edge.getSource()==p1)e1 = edge;
+                    }
+                    for(Edge edge : task.getInEdges()){
+                        if(edge.getSource()==p2)e2 = edge;
+                    }
+                    double dat1 = t1.getFinishTime();
+                    dat1 += e1.getDataSize()/ VM.NETWORK_SPEED;
+                    double dat2 = t2.getFinishTime();
+                    dat2 += e2.getDataSize()/ VM.NETWORK_SPEED;
+                    //需要跨云，放到最后一个位置即可
+                    if(("public".equals(t1.getVM().getAttribute()) && "private".equals(vm.getAttribute()))
+                            || ("private".equals(t1.getVM().getAttribute()) && "public".equals(vm.getAttribute())) ) {
+                        dat1 -= e1.getDataSize()/ VM.NETWORK_SPEED;
+                        dat1 += e1.getDataSize()/Channel.getTransferSpeed();
+                    }
+                    if(("public".equals(t2.getVM().getAttribute()) && "private".equals(vm.getAttribute()))
+                            || ("private".equals(t2.getVM().getAttribute()) && "public".equals(vm.getAttribute())) ) {
+                        dat2 -= e2.getDataSize()/ VM.NETWORK_SPEED;
+                        dat2 += e2.getDataSize()/Channel.getTransferSpeed();
+                    }
+                    return Double.compare(dat1, dat2);
+                }
+            });
+        }
+        //数据最后到的我们优先复制
+        Collections.sort(edgesNotInThisVM, new Comparator<Edge>() {
+            public int compare(Edge e1, Edge e2) {
+                if (e1 == null || e2 == null) { //entryTask
+                    return 0;
+                }
+                Task p1 = e1.getSource();
+                TAllocation tp1 = parentTaskMap.get(p1).get(0);
+                Task p2 = e2.getSource();
+                TAllocation tp2 = parentTaskMap.get(p2).get(0);
+                //只取allocation list当中的第一个就够了，因为肯定是第一个allocation的执行时间最早
+                double dat1 = 0;
+                double dat2 = 0;
+                dat1 = tp1.getFinishTime();
+                dat2 = tp2.getFinishTime();
+
+                if (("Private".equals(vm.getAttribute()) && p1.getRunOnPrivateOrPublic() == true) ||
+                        ("Public".equals(vm.getAttribute()) && p1.getRunOnPrivateOrPublic() == false)
+                ) {  //同属一个云
+                    dat1 += e1.getDataSize() / VM.NETWORK_SPEED;
+                } else {//不同属一个云
+                    dat1 += e1.getDataSize() / Channel.getTransferSpeed();
+                }
+                if (("Private".equals(vm.getAttribute()) && p2.getRunOnPrivateOrPublic() == true) ||
+                        ("Public".equals(vm.getAttribute()) && p2.getRunOnPrivateOrPublic() == false)
+                ) {  //同属一个云
+                    dat2 += e2.getDataSize() / VM.NETWORK_SPEED;
+                } else {//不同属一个云
+                    dat2 += e2.getDataSize() / Channel.getTransferSpeed();
+                }
+                return -1 * Double.compare(dat1, dat2);
+            }
+        });
+        List<Task> parentsNotInThisVM = new ArrayList<>();
+        for (Edge edge : edgesNotInThisVM)
+            parentsNotInThisVM.add(edge.getSource());
+        return parentsNotInThisVM;
+    }
+
+
+    //这个只在同一个云内进行复制
+    public List<Task> getParentsNotInVM2(Task task, VM vm) {
         List<Edge> edgesNotInThisVM = new ArrayList<Edge>();
         for (Edge edge : task.getInEdges()) {
             Task parent = edge.getSource();
             //需判断父任务的隐私性,如果vm是公有云且父任务私密直接跳过当前
-            if(parent.getRunOnPrivateOrPublic()==true && vm.getAttribute().equals("Public") ) continue;
+            if (parent.getRunOnPrivateOrPublic() == true && vm.getAttribute().equals("Public")) continue;
             boolean inFlag = false;
-            for(TAllocation TA : tAllocationList){
-                if(TA.getTask() == parent){
-                    if(TA.getVM() == vm) inFlag = true;
+            for (TAllocation TA : tAllocationList) {
+                if (TA.getTask() == parent) {
+                    if (TA.getVM() == vm) inFlag = true;
+                    //和不在同一个云复制关键在这
+                    if((TA.getPublicVM()!=null && vm.getAttribute().equals("private")) ||
+                            (TA.getPrivateVM()!=null && vm.getAttribute().equals("public"))) inFlag = true;
                 }
             }
-            if (!inFlag){
+            if (!inFlag) {
                 edgesNotInThisVM.add(edge);
             }
 
@@ -1239,7 +1424,7 @@ public class CCSH {
         //数据最后到的我们优先复制
         Collections.sort(edgesNotInThisVM, new Comparator<Edge>() {
             public int compare(Edge e1, Edge e2) {
-                if(e1 == null || e2 == null){ //entryTask
+                if (e1 == null || e2 == null) { //entryTask
                     return 0;
                 }
                 Task p1 = e1.getSource();
@@ -1247,37 +1432,37 @@ public class CCSH {
                 //只取allocation list当中的第一个就够了，因为肯定是第一个allocation的执行时间最早
                 double dat1 = 0;
                 double dat2 = 0;
-                for(TAllocation tAllocation: tAllocationList){
-                    if(tAllocation.getTask()==p1){
+                for (TAllocation tAllocation : tAllocationList) {
+                    if (tAllocation.getTask() == p1) {
                         dat1 = tAllocation.getFinishTime();
                         break;
                     }
                 }
-                for(TAllocation tAllocation: tAllocationList){
-                    if(tAllocation.getTask()==p2){
+                for (TAllocation tAllocation : tAllocationList) {
+                    if (tAllocation.getTask() == p2) {
                         dat2 = tAllocation.getFinishTime();
                         break;
                     }
                 }
-                if(("Private".equals(vm.getAttribute()) && p1.getRunOnPrivateOrPublic()==true) ||
-                        ("Public".equals(vm.getAttribute()) && p1.getRunOnPrivateOrPublic()==false)
-                ){  //同属一个云
-                    dat1 += e1.getDataSize()/VM.NETWORK_SPEED;
-                }else{//不同属一个云
-                    dat1 += e1.getDataSize()/Channel.getTransferSpeed();
+                if (("Private".equals(vm.getAttribute()) && p1.getRunOnPrivateOrPublic() == true) ||
+                        ("Public".equals(vm.getAttribute()) && p1.getRunOnPrivateOrPublic() == false)
+                ) {  //同属一个云
+                    dat1 += e1.getDataSize() / VM.NETWORK_SPEED;
+                } else {//不同属一个云
+                    dat1 += e1.getDataSize() / Channel.getTransferSpeed();
                 }
-                if(("Private".equals(vm.getAttribute()) && p2.getRunOnPrivateOrPublic()==true) ||
-                        ("Public".equals(vm.getAttribute()) && p2.getRunOnPrivateOrPublic()==false)
-                ){  //同属一个云
-                    dat2 += e2.getDataSize()/VM.NETWORK_SPEED;
-                }else{//不同属一个云
-                    dat2 += e2.getDataSize()/Channel.getTransferSpeed();
+                if (("Private".equals(vm.getAttribute()) && p2.getRunOnPrivateOrPublic() == true) ||
+                        ("Public".equals(vm.getAttribute()) && p2.getRunOnPrivateOrPublic() == false)
+                ) {  //同属一个云
+                    dat2 += e2.getDataSize() / VM.NETWORK_SPEED;
+                } else {//不同属一个云
+                    dat2 += e2.getDataSize() / Channel.getTransferSpeed();
                 }
                 return -1 * Double.compare(dat1, dat2);
             }
         });
         List<Task> parentsNotInThisVM = new ArrayList<>();
-        for(Edge edge : edgesNotInThisVM)
+        for (Edge edge : edgesNotInThisVM)
             parentsNotInThisVM.add(edge.getSource());
         return parentsNotInThisVM;
     }

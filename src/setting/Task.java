@@ -136,12 +136,12 @@ public class Task{
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Task task = (Task) o;
-        return Double.compare(task.taskSize, taskSize) == 0 && AST == task.AST && AFT == task.AFT && EST == task.EST && EFT == task.EFT && RunOnPrivateOrPublic == task.RunOnPrivateOrPublic && Objects.equals(name, task.name) && Objects.equals(outEdges, task.outEdges) && Objects.equals(inEdges, task.inEdges);
+        return  name.equals(task.getName());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, taskSize, AST, AFT, EST, EFT, RunOnPrivateOrPublic, outEdges, inEdges);
+        return Objects.hash(name);
     }
 
 
