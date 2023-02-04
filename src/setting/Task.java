@@ -12,10 +12,23 @@ public class Task{
     private double EST;   //Earliest execution Start Time
     private double EFT;   //Earliest execution Finish Time
 
-    private VM_Private priavteVM;
+    private VM_Private privateVM;
     private VM_Public publicVM;
 
     private boolean RunOnPrivateOrPublic;
+
+    public boolean isPrivateAttribute() {
+        return privateAttribute;
+    }
+
+    public void setPrivateAttribute(boolean privateAttribute) {
+        this.privateAttribute = privateAttribute;
+    }
+
+    private boolean privateAttribute;
+    public boolean getprivateAttribute(){
+        return privateAttribute;
+    }
     //adjacent list to store edge information
     //用于存储边缘信息的相邻列表
     //由于子边的终端之间可能也存在父子关系，所以这些edge都是按照其终端对应的拓扑顺序进行排序的;通过workflow中的topoSort函数实现
@@ -60,11 +73,11 @@ public class Task{
     public List<Edge> getInEdges() {
         return inEdges==null ? null : Collections.unmodifiableList(inEdges);
     }
-    public VM_Private getPriavteVM() {
-        return priavteVM;
+    public VM_Private getPrivateVM() {
+        return privateVM;
     }
-    public void setPriavteVM(VM_Private priavteVM) {
-        this.priavteVM = priavteVM;
+    public void setPrivateVM(VM_Private privateVM) {
+        this.privateVM = privateVM;
     }
     public VM_Public getPublicVM() {
         return publicVM;

@@ -40,6 +40,7 @@ public class Workflow {
         }
         System.out.println("succeed to read a workflow from " + file);
         list = topoSort(list.get(0));   //为什么先拓扑排序后按gamma排序，直接gamma排序不行吗。后续懂了：gamma排序也是基于拓扑排序
+        ProjectCofig.bound=list.size()-2;//减去入口和出口虚拟节点
 
         setPrivacy(list,ProjectCofig.betaType);  //设置隐私，在Workflow类里面设置，就无需在CCSH算法里面设置了。
 
@@ -54,12 +55,12 @@ public class Workflow {
 
         //only used in Clevel
         Workflow.maxOutd = maxOutd;
-        c_levels = new TProperties(this,TProperties.Type.C_LEVEL);
+        c_levels = new TProperties(this,ProjectCofig.type);
         Collections.sort(list, c_levels);
         Collections.reverse(list);
-        //System.out.println("topological sort and clevel");
-//        for (Task t : list)
-//            System.out.println(t.getName() + "\t" + c_levels.get(t));
+        System.out.println("topological sort and clevel");
+        /*for (Task t : list)
+            System.out.println(t.getName() + "\t" + c_levels.get(t));*/
 
         for(int i = 0;i< list.size();i++){
             Task t = list.get(i);
@@ -132,12 +133,14 @@ public class Workflow {
 
             for (int i = 0; i < tasks.size(); i++) {
                 Task task = tasks.get(i);
-                task.setRunOnPrivateOrPublic(false);
+                if(ProjectCofig.adaptorType!=2)task.setRunOnPrivateOrPublic(false);  //复制调度时此属性不能使用
+                task.setPrivateAttribute(false);
 
                 if(task.getName().equals("exit") || task.getName().equals("entry")) continue;
                 Integer number=Integer.valueOf(task.getName().substring(2));
                 if(set.contains(number)){
-                    task.setRunOnPrivateOrPublic(true);
+                    if(ProjectCofig.adaptorType!=2)task.setRunOnPrivateOrPublic(true);
+                    task.setPrivateAttribute(true);
                 }
             }
         }
@@ -146,7 +149,8 @@ public class Workflow {
             //对特定任务设置隐私
             for (int i = 0; i < tasks.size(); i++) {
                 Task task = tasks.get(i);
-                task.setRunOnPrivateOrPublic(false);
+                //task.setRunOnPrivateOrPublic(false);
+                task.setPrivateAttribute(false);
     ////            if(task.getName().equals(("ID00001")) || task.getName().equals(("ID00002")) || task.getName().equals(("ID00049"))){
     ////                task.setRunOnPrivateOrPublic(true);
     ////            }
@@ -155,8 +159,18 @@ public class Workflow {
     ////                task.setRunOnPrivateOrPublic(true);
     ////            }
     //            //dot6
-                if( task.getName().equals(("1")) || task.getName().equals(("2")) || task.getName().equals(("9")) || task.getName().equals(("8"))){
+                /*if( task.getName().equals(("1")) || task.getName().equals(("2")) || task.getName().equals(("9")) || task.getName().equals(("8"))){
                     task.setRunOnPrivateOrPublic(true);
+                }*/
+                //dot8
+                /*if( task.getName().equals(("6")) || task.getName().equals(("8"))||task.getName().equals(("1"))) {
+                    //task.setRunOnPrivateOrPublic(true);
+                    task.setPrivateAttribute(true);
+                }*/
+                //dot9
+                if( task.getName().equals(("10")) || task.getName().equals(("8"))||task.getName().equals(("2"))) {
+                    task.setRunOnPrivateOrPublic(true);
+                    task.setPrivateAttribute(true);
                 }
 
             }
@@ -168,7 +182,7 @@ public class Workflow {
     public void setSequentialLength(){
         sequentialLength = 0;
         for(Task task : list){
-            if(task.getRunOnPrivateOrPublic() == true){
+            if(task.getprivateAttribute()==true){
                 sequentialLength +=task.getTaskSize()/VM_Private.SPEEDS[VM_Private.SLOWEST];
             }
             else{
@@ -236,7 +250,7 @@ public class Workflow {
         int sensitiveTaskNumber=0,insensitiveTaskNumber=0;
         int edgeNum = 0;
         for (Task task : list) {
-            if(task.getRunOnPrivateOrPublic()==true){
+            if(task.getprivateAttribute()==true){
                 sensitiveTaskSizeSum+=task.getTaskSize();
                 sensitiveTaskNumber++;
             }

@@ -7,16 +7,22 @@ import java.util.List;
 public class Evaluation {
     public static void main(String[] args) throws IOException {
         // test("D:\\workflowSamples\\MONTAGE\\MONTAGE.n.100.0.dax",false);  //真实工作流
-        //多个算法使用
-//        for(int i = 0;i<ProjectCofig.types.length;i++){
-//            tests(ProjectCofig.path,false,ProjectCofig.types[i]);
-//        }
+        //多个算法使用求averageMakespan
+        List<Double> makespan = new ArrayList<>();
+        for(int i = 0;i<20;i++){
+            ProjectCofig.seed = i;
+            makespan.add(test(ProjectCofig.path,false));
+        }
+        System.out.println("mean:"+mean(makespan));
+        System.out.println("std:"+standardDeviaction(makespan));
         //单个算法使用
-        test(ProjectCofig.path,false);  //真实工作流
+        //test(ProjectCofig.path,false);  //真实工作流
+
+
 
     }
 
-    private static String[] test(String file,boolean visualizeFlag)
+    private static Double test(String file,boolean visualizeFlag)
     throws IOException{
         Workflow wf = new Workflow(file);
         List<CSolution> list = new ArrayList<CSolution>();
@@ -40,11 +46,38 @@ public class Evaluation {
 //        }
         //used for data collection
         result += wf.getSequentialLength() +"\t" + wf.getCPTaskLength()+"\t" + wf.getCCR();
-        //System.out.println(result);
+        System.out.println(result);
 
         String[] rtnValues = {result, runtime};
         list.clear();
 
-        return rtnValues;
+        return ccsh.getMakespan();
     }
+
+
+
+    public static double standardDeviaction(List<Double> list){
+        double sum = 0;
+        double meanValue = mean(list);                //平均数
+        for(int i = 0;i < list.size();i++){
+            sum += Math.pow(list.get(i)-meanValue, 2);
+        }
+        return Math.sqrt(sum/list.size());
+    }
+
+    //计算和
+    public static double calcSum(List<Double> list){
+        double sum = 0;
+        for(int i = 0;i<list.size();i++){
+            sum += list.get(i);
+        }
+        return sum;
+    }
+
+    //求平均值
+    public static double mean(List<Double> list){
+        return calcSum(list) / list.size();
+    }
+
+
 }

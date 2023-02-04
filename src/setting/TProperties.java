@@ -36,7 +36,7 @@ public class TProperties extends HashMap<Task,Double> implements Comparator<Task
                     bLevel = Math.max(bLevel,childBLevel + outEdge.getDataSize() / VM.NETWORK_SPEED);
 
                 }
-                if(task.getRunOnPrivateOrPublic() == true){
+                if(task.getprivateAttribute() == true){
                     bLevel = bLevel + VM_Private.SPEEDS[VM_Private.SLOWEST];
                 }
                 else{
@@ -53,7 +53,7 @@ public class TProperties extends HashMap<Task,Double> implements Comparator<Task
                     Double childSLevel = this.get(outEdge.getDestination());
                     sLevel = Math.max(sLevel, childSLevel);
                 }
-                if(task.getRunOnPrivateOrPublic() == true){
+                if(task.getprivateAttribute() == true){
                     sLevel += task.getTaskSize()/VM_Private.SPEEDS[VM_Private.SLOWEST];
                 }
                 else{
@@ -261,7 +261,7 @@ public class TProperties extends HashMap<Task,Double> implements Comparator<Task
                     //为了防止因为精度产生父子结点clevel相等的情况，我们在这里给clevel加一个微小数值，使之必须满足拓扑排序
                     clevel+=0.000000001;
                 }
-                if(task.getRunOnPrivateOrPublic()==true){
+                if(task.getprivateAttribute() == true){
 
                     clevel +=task.getTaskSize()/VM_Private.SPEEDS[VM_Private.SLOWEST];
                     double outdData = 0;  //结果乘outd
@@ -285,7 +285,7 @@ public class TProperties extends HashMap<Task,Double> implements Comparator<Task
                     double outdData = 0;  //结果乘outd
                     for(Edge outEdge: task.getOutEdges()) {
                         Task succTask = outEdge.getDestination();
-                        if(succTask.getRunOnPrivateOrPublic()== false) {
+                        if(succTask.getprivateAttribute() == false) {
                             outdData += outEdge.getDataSize() / VM.NETWORK_SPEED;
                         }
                         else {

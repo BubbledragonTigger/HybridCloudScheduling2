@@ -1,9 +1,7 @@
 package contentionAware;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 
-import com.sun.xml.internal.bind.v2.runtime.reflect.Lister;
 import contentionFree.Allocation;
 import contentionFree.TAllocation;
 import setting.*;
@@ -27,6 +25,9 @@ public class CCSH {
     ArrayList<EAllocation> eAllocationListRecord = new ArrayList<>();
     ArrayList<CAllocation> cAllocationListRecord = new ArrayList<>();
 
+    public Double getMakespan(){
+        return tAllocationList.get(tAllocationList.size()-1).getFinishTime();
+    }
     /**
      * static list scheduling for @param wf
      *
@@ -76,7 +77,7 @@ public class CCSH {
 
 
             //当前任务ni是私密任务true:私有云；false:公有云:
-            if (task.getRunOnPrivateOrPublic() == true) {
+            if (task.isPrivateAttribute() == true) {
                 for (VM_Private vm : vmPrivateList) {
                     double tsTask;  //Task EST
                     double tfTask;  //Task EFT
@@ -85,7 +86,7 @@ public class CCSH {
                     tfTask = tsTask + task.getTaskSize() / vm.getSpeed();
                     if (tctype == TProperties.Type.B_LEVEL) {  //无需给tfTask添加额外的东西
                         if (type == 2) {  //复制调度
-                            double[] tTask = calcTfTaskWithDup(task, null, vm, dupList, 0, tsTask, tfTask,TProperties.Type.B_LEVEL);
+                            double[] tTask =  calcTfTaskWithDup(task, null, vm, dupList, 0, tsTask, tfTask,TProperties.Type.B_LEVEL);
                             tsTask = tTask[0];
                             tfTask = tTask[1];
                         }
@@ -143,7 +144,7 @@ public class CCSH {
                         double dft = dFT(task, vm);
                         tfTask = tfTask + dft;
                         if (type == 2) {
-                            double[] tTask = calcTfTaskWithDup(task, vm, null, dupList, dft, tsTask, tfTask,TProperties.Type.B_LEVEL);
+                            double[] tTask = calcTfTaskWithDup(task, vm, null, dupList, dft, tsTask, tfTask,TProperties.Type.C_LEVEL);
                             tsTask = tTask[0];
                             tfTask = tTask[1];
                         }
@@ -154,6 +155,7 @@ public class CCSH {
                         minEFT = tfTask;
                         selectedPrivateVM = null;
                         selectedPublicVM = vm;
+
                         if (type == 2) selectedDupList = new ArrayList<>(dupList);
                     }
                 }
@@ -192,6 +194,7 @@ public class CCSH {
                         minEFT = tfTask;
                         selectedPrivateVM = vm;
                         selectedPublicVM = null;
+
                         if (type == 2) selectedDupList = new ArrayList<>(dupList);
                     }
                 }
@@ -202,38 +205,46 @@ public class CCSH {
 
 
                     if (talloc.getVM().getAttribute().equals("Private")) {
-                        Task p = talloc.getTask();
-                        p.setPriavteVM(talloc.getPrivateVM());
+                        /*Task p = talloc.getTask();
+                        p.setPrivateVM(talloc.getPrivateVM());
                         p.setPublicVM(null);
-                        p.setRunOnPrivateOrPublic(true);
+                        p.setRunOnPrivateOrPublic(true);*/
                         addTaskEdgesToVM(null, talloc.getPrivateVM(), talloc.getTask(), talloc.getStartTime(), false);
                     } else {
-                        Task p = talloc.getTask();
-                        p.setPriavteVM(null);
+                        /*Task p = talloc.getTask();
+                        p.setPrivateVM(null);
                         p.setPublicVM(talloc.getPublicVM());
-                        p.setRunOnPrivateOrPublic(false);
+                        p.setRunOnPrivateOrPublic(false);*/
                         addTaskEdgesToVM(talloc.getPublicVM(), null, talloc.getTask(), talloc.getStartTime(), false);
                     }
                 }
             }
             if (selectedPrivateVM != null) {
-                task.setPriavteVM(selectedPrivateVM);
+                /*task.setPrivateVM(selectedPrivateVM);
                 task.setPublicVM(null);
-                task.setRunOnPrivateOrPublic(true);
+                task.setRunOnPrivateOrPublic(true);*/
+                if(ProjectCofig.adaptorType!=2){
+                    task.setPrivateVM(selectedPrivateVM);
+                    task.setPublicVM(null);
+                    task.setRunOnPrivateOrPublic(true);
+                }
                 addTaskEdgesToVM(null, selectedPrivateVM, task, minEST, false);
             } else {
-                task.setPriavteVM(null);
+                /*task.setPrivateVM(null);
                 task.setPublicVM(selectedPublicVM);
-                task.setRunOnPrivateOrPublic(false);
+                task.setRunOnPrivateOrPublic(false);*/
+                if(ProjectCofig.adaptorType!=2) {
+                    task.setPrivateVM(null);
+                    task.setPublicVM(selectedPublicVM);
+                    task.setRunOnPrivateOrPublic(false);
+                }
                 addTaskEdgesToVM(selectedPublicVM, null, task, minEST, false);
             }
 
         }
         System.out.println("--------");
+
         ChannelSolution channelSolution = new ChannelSolution(eAllocationList, cAllocationList, tAllocationList);
-        ChannelSolution newChannelSolution = null;
-        contentionAware.ChannelAdaptor channelAdaptor = new ChannelAdaptor();
-        newChannelSolution = channelAdaptor.buildFromSolutionShared(channelSolution, wf);
         if (tctype == TProperties.Type.C_LEVEL && type == 1) {  //reschedule
             ChannelSolution channelSolution2 = new ChannelSolution(eAllocationList, cAllocationList, tAllocationList);//reschedule
             ChannelSolution newChannelSolution2 = null;
@@ -242,16 +253,20 @@ public class CCSH {
             System.out.println(tctype + "reSchedule/E makespan:" + newChannelSolution2.getMakespan());
             System.out.println(tctype + "reSchedule/E SLR:" + newChannelSolution2.getMakespan() / wf.getCPTaskLength());
             System.out.println(tctype + "reSchedule/E speedup:" + wf.getSequentialLength() / channelSolution.getMakespan());
-
         }
 
         System.out.println(tctype + "/E makespan:" + channelSolution.getMakespan());
         System.out.println(tctype + "/E SLR:" + channelSolution.getMakespan() / wf.getCPTaskLength());
         System.out.println(tctype + "/E speedup:" + wf.getSequentialLength() / channelSolution.getMakespan());
-        System.out.println(tctype + "/S makespan:" + newChannelSolution.getMakespan());
-        System.out.println(tctype + "/S SLR:" + newChannelSolution.getMakespan() / wf.getCPTaskLength());
-        System.out.println(tctype + "/S speedup:" + wf.getSequentialLength() / newChannelSolution.getMakespan());
 
+        if(ProjectCofig.adaptorType!=2){
+            ChannelSolution newChannelSolution = null;
+            contentionAware.ChannelAdaptor channelAdaptor = new ChannelAdaptor();
+            newChannelSolution = channelAdaptor.buildFromSolutionShared(channelSolution, wf);
+            System.out.println(tctype + "/S makespan:" + newChannelSolution.getMakespan());
+            System.out.println(tctype + "/S SLR:" + newChannelSolution.getMakespan() / wf.getCPTaskLength());
+            System.out.println(tctype + "/S speedup:" + wf.getSequentialLength() / newChannelSolution.getMakespan());
+        }
         return csolution;
 
     }
@@ -283,7 +298,7 @@ public class CCSH {
                 List<Allocation> parentAlloc = addTaskEdgesToVM(publicVM, null, parent, parentEST, true);
                 double newEST = calcTSTaskWithInsert(task, publicVM, null, 1);
                 double newtfTask = newEST + task.getTaskSize() / publicVM.getSpeed();
-                if(algorithmType == TProperties.Type.C_LEVEL) newtfTask = newEST + task.getTaskSize() / privateVM.getSpeed() + dFT;
+                if(algorithmType == TProperties.Type.C_LEVEL) newtfTask = newEST + task.getTaskSize() / publicVM.getSpeed() + dFT;
                 if (newtfTask < tfTask) {
                     tfTask = newtfTask;
                     tsTask = newEST;
@@ -311,7 +326,7 @@ public class CCSH {
         }
     }
 
-    private CSolution transformCSlotion(ArrayList<Task> tasks, Workflow wf) {
+    /*private CSolution transformCSlotion(ArrayList<Task> tasks, Workflow wf) {
         csolution = new CSolution();
         csolution.newVM(VM.SLOWEST);  //私有云内部速度是1
         csolution.newVM(VM.FASTEST);  //公有云内部速度是5
@@ -424,10 +439,10 @@ public class CCSH {
 
 
         return csolution;
-    }
+    }*/
 
     //放在workflow里面实现此函数了
-    private ArrayList<Task> setPrivacy(ArrayList<Task> tasks) {
+    /*private ArrayList<Task> setPrivacy(ArrayList<Task> tasks) {
 
         //设置随机数B=0.1，如果任务大小是50，则设置其中5个任务为私有任务
 //        double beta = 0.1;
@@ -459,6 +474,7 @@ public class CCSH {
         for (int i = 0; i < tasks.size(); i++) {
             Task task = tasks.get(i);
             task.setRunOnPrivateOrPublic(false);
+            task.setPrivateAttribute(false);
 //            if(task.getName().equals(("ID00001")) || task.getName().equals(("ID00002")) || task.getName().equals(("ID00049"))){
 //                task.setRunOnPrivateOrPublic(true);
 //            }
@@ -469,10 +485,11 @@ public class CCSH {
             //dot6
             if (task.getName().equals(("1")) || task.getName().equals(("2")) || task.getName().equals(("9"))) {
                 task.setRunOnPrivateOrPublic(true);
+                task.setPrivateAttribute(true);
             }
         }
         return tasks;
-    }
+    }*/
     //private transformCAllocationToCSolution
 
     private List<Allocation> addTaskEdgesToVM(VM_Public publicVM, VM_Private privateVM, Task task, double startTime, boolean dupTest) {
@@ -485,8 +502,8 @@ public class CCSH {
                 }
                 publicVM.setTasks(task);
 
-                task.setAST(startTime);
-                task.setAFT(startTime + task.getTaskSize() / publicVM.getSpeed());
+                /*task.setAST(startTime);
+                task.setAFT(startTime + task.getTaskSize() / publicVM.getSpeed());*/
             }
             allocateIncomingEdges(task, publicVM, 2);//step=2是不进行回滚操作
             TAllocation tAllocation = new TAllocation(publicVM, null, task, startTime, publicVM.getSpeed());
@@ -505,8 +522,8 @@ public class CCSH {
                     privateVM.setTasks(new ArrayList<Task>());
                 }
                 privateVM.setTasks(task);
-                task.setAST(startTime);
-                task.setAFT(startTime + task.getTaskSize() / privateVM.getSpeed());
+                /*task.setAST(startTime);
+                task.setAFT(startTime + task.getTaskSize() / privateVM.getSpeed());*/
             }
             allocateIncomingEdges(task, privateVM, 2);//step=2是不进行回滚操作
             TAllocation tAllocation = new TAllocation(null, privateVM, task, startTime, privateVM.getSpeed());
@@ -749,36 +766,32 @@ public class CCSH {
             boolean isSmaller = false;
             double minParentsDAT = Double.MAX_VALUE;   //针对复制，取到达时间的最小值，再加到DAT中
             for (TAllocation pTAllocation : pTAllocationList) {
-                parentTask.setPriavteVM(pTAllocation.getPrivateVM());
-                parentTask.setPublicVM(pTAllocation.getPublicVM());
-                parentTask.setRunOnPrivateOrPublic(pTAllocation.getPrivateVM() == null ? false : true);
-                parentTask.setAST(pTAllocation.getStartTime());
-                parentTask.setAFT(pTAllocation.getFinishTime());
+                boolean isRunOnPrivateOrPublic =pTAllocation.getPrivateVM() == null ? false : true;
+                double parentTAFT = pTAllocation.getFinishTime();
 
-                if (parentTask.getPriavteVM() == vl && parentTask.getRunOnPrivateOrPublic() == true) {
+                if (pTAllocation.getPrivateVM() == vl && isRunOnPrivateOrPublic == true) {
 
-                    double eReadyTime = parentTask.getAFT();  //同一个处理器上我们也记录边分配
+                    double eReadyTime = parentTAFT;  //同一个处理器上我们也记录边分配
                     double eFinishTime = eReadyTime;
-                    EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPriavteVM(),
+                    EAllocation eAllocation = new EAllocation(inEdge,pTAllocation.getPrivateVM(),
                             vl, eReadyTime, VM_Private.NETWORK_SPEED, eFinishTime);
 
-                    if(minParentsDAT>parentTask.getAFT()) {
+                    if(minParentsDAT>eFinishTime) {
                         isSmaller = true;
                         minEAllocationRecord = eAllocation;
                         minCAllocationRecord = null;
+                        minParentsDAT = eFinishTime;
                     }
-
-                    minParentsDAT = Math.min(minParentsDAT, parentTask.getAFT());
                     //DAT = Math.max(DAT, parentTask.getAFT());  //line5
                 }
                 //(2)Line6
-                else if (parentTask.getPriavteVM() != vl && parentTask.getRunOnPrivateOrPublic() == true) {
+                else if (pTAllocation.getPrivateVM() != vl && isRunOnPrivateOrPublic == true) {
                     //Line7
-                    double eReadyTime = parentTask.getAFT();
+                    double eReadyTime = parentTAFT;
                     double eFinishTime = eReadyTime + inEdge.getDataSize() / VM_Private.NETWORK_SPEED;
 
                     //line8
-                    EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPriavteVM(),
+                    EAllocation eAllocation = new EAllocation(inEdge, pTAllocation.getPrivateVM(),
                             vl, eReadyTime, VM_Private.NETWORK_SPEED, eFinishTime);
 
                     if(minParentsDAT>eFinishTime) {
@@ -793,7 +806,7 @@ public class CCSH {
                 //(3)Line10
                 else {
                     //因为vl已经是私有云上服务器，所以只需要判断ui是否是公有云处理器
-                    if (parentTask.getRunOnPrivateOrPublic() == false) { //Line11
+                    if (isRunOnPrivateOrPublic == false) { //Line11
                         ArrayList<Double> downloadStartTimeList = new ArrayList<>();
                         ArrayList<Double> downloadFinishTimeList = new ArrayList<>();
                         for (CAllocation cAllocation : cAllocationList) {
@@ -811,28 +824,28 @@ public class CCSH {
                         for (int i = 0; i < downloadStartTimeList.size(); i++) {
                             double downloadStartTime = downloadStartTimeList.get(i);
                             //这个判断是为了判断如果输入边的父任务在下一个上传阶段开始时间的时候还没有完成，则可以直接跳过此阶段
-                            if (parentTask.getAFT() >= downloadStartTimeList.get(i)) {
+                            if (parentTAFT >= downloadStartTimeList.get(i)) {
                                 continue;
                             }
 
                             //插入在开头，即所有下载边之前
                             if (i == 0) {
-                                if (parentTask.getAFT() + inEdge.getDataSize() / Channel.getTransferSpeed() <= downloadStartTime) {
+                                if (parentTAFT + inEdge.getDataSize() / Channel.getTransferSpeed() <= downloadStartTime) {
                                     //此时边准备好了就可以传入了
-                                    double eReadyTime = parentTask.getAFT();
+                                    double eReadyTime = parentTAFT;
                                     double eFinishTime = eReadyTime + inEdge.getDataSize() / Channel.getTransferSpeed();
 
                                     double channelDownloadStartTime = eReadyTime;
                                     double channelDownloadFinishTime = eFinishTime;
 
-                                    CAllocation c = new CAllocation(inEdge, parentTask.getPublicVM(),
+                                    CAllocation c = new CAllocation(inEdge, pTAllocation.getPublicVM(),
                                             vl, eReadyTime, eFinishTime, -1, -1,
                                             channelDownloadStartTime, channelDownloadFinishTime, false);
                                     //永久分配，最后通过cAllocationListRecord中的记录撤销
 
                                     //永久分配,这个EAllocation可能以后对画图有帮助，这里暂时记录，其实CAllocation已经包括了,参数VM_Private.NETWORK_SPEED用不到
-                                    EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPublicVM(),
-                                            vl, eReadyTime, VM_Private.NETWORK_SPEED, eFinishTime);
+                                    EAllocation eAllocation = new EAllocation(inEdge, pTAllocation.getPublicVM(),
+                                            vl, eReadyTime, Channel.getTransferSpeed(), eFinishTime);
 
                                     isFinal = false;
                                     if(minParentsDAT>eFinishTime) {
@@ -847,14 +860,14 @@ public class CCSH {
                             } else {
                                 //前一个任务的完成时间，这里i永远不会为0，所以不会出错
                                 double downloadPreviousFinishTime = downloadFinishTimeList.get(i - 1);
-                                double eReadyTime = Math.max(downloadPreviousFinishTime, parentTask.getAFT());
+                                double eReadyTime = Math.max(downloadPreviousFinishTime, parentTAFT);
                                 //父任务的完成时间>=前一个下载通道的完成时间而且父任务的完成时间+传输时长<=当前上传通道的开始时间
                                 if (eReadyTime + inEdge.getDataSize() / Channel.getTransferSpeed() <= downloadStartTime) {
                                     double channelDownloadStartTime = eReadyTime;
                                     double eFinishTime = eReadyTime + inEdge.getDataSize() / Channel.getTransferSpeed();
                                     double channelDownloadFinishTime = eFinishTime;
                                     //永久分配，最后通过cAllocationListRecord中的记录撤销
-                                    CAllocation c = new CAllocation(inEdge, parentTask.getPublicVM(),
+                                    CAllocation c = new CAllocation(inEdge, pTAllocation.getPublicVM(),
                                             vl, eReadyTime, eFinishTime, -1, -1,
                                             channelDownloadStartTime, channelDownloadFinishTime, false);
                                     //永久分配，最后通过cAllocationListRecord中的记录撤销
@@ -863,8 +876,8 @@ public class CCSH {
                                     //cAllocationListRecord.add(c);
 
                                     //永久分配,这个EAllocation可能以后对画图有帮助，这里暂时记录，其实CAllocation已经包括了,参数VM_Private.NETWORK_SPEED用不到
-                                    EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPublicVM(),
-                                            vl, eReadyTime, VM_Private.NETWORK_SPEED, eFinishTime);
+                                    EAllocation eAllocation = new EAllocation(inEdge, pTAllocation.getPublicVM(),
+                                            vl, eReadyTime, Channel.getTransferSpeed(), eFinishTime);
                                     //this.eAllocationList.add(eAllocation);
                                     //eAllocationListRecord.add(eAllocation);
                                     isFinal = false;
@@ -888,12 +901,12 @@ public class CCSH {
                             } else {
                                 finalFinishTime = downloadFinishTimeList.get(downloadFinishTimeList.size() - 1);
                             }
-                            double eReadyTime = Math.max(finalFinishTime, parentTask.getAFT());
+                            double eReadyTime = Math.max(finalFinishTime, parentTAFT);
                             double channelDownloadStartTime = eReadyTime;
                             double eFinishTime = eReadyTime + inEdge.getDataSize() / Channel.getTransferSpeed();
                             double channelDownloadFinishTime = eFinishTime;
                             //永久分配，最后通过cAllocationListRecord中的记录撤销
-                            CAllocation c = new CAllocation(inEdge, parentTask.getPublicVM(),
+                            CAllocation c = new CAllocation(inEdge, pTAllocation.getPublicVM(),
                                     vl, eReadyTime, eFinishTime, -1, -1,
                                     channelDownloadStartTime, channelDownloadFinishTime, false);
                             //永久分配，最后通过cAllocationListRecord中的记录撤销
@@ -902,8 +915,8 @@ public class CCSH {
                             //cAllocationListRecord.add(c);
 
                             //永久分配,这个EAllocation可能以后对画图有帮助，这里暂时记录，其实CAllocation已经包括了,参数VM_Private.NETWORK_SPEED用不到
-                            EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPublicVM(),
-                                    vl, eReadyTime, VM_Private.NETWORK_SPEED, eFinishTime);
+                            EAllocation eAllocation = new EAllocation(inEdge, pTAllocation.getPublicVM(),
+                                    vl, eReadyTime, Channel.getTransferSpeed(), eFinishTime);
                             //this.eAllocationList.add(eAllocation);
                             //eAllocationListRecord.add(eAllocation);
                             if(minParentsDAT>eFinishTime) {
@@ -950,7 +963,7 @@ public class CCSH {
 
             //判断是否是私密任务，是私密任务就是云内传输
             //方法1：
-//            if(succTask.getRunOnPrivateOrPublic() == true){
+//            if(succTask.isPrivateAttribute()== true){
 //                //result+= succTask.getTaskSize()/VM_Private.SPEEDS[VM_Private.SLOWEST];
 //                result+= outEdge.getDataSize()/VM.NETWORK_SPEED;
 //            }
@@ -960,10 +973,9 @@ public class CCSH {
 //                result+=outEdge.getDataSize()/Channel.getTransferSpeed();
 //            }
             //方法2
-            if (succTask.getRunOnPrivateOrPublic() == false) {
+            if (succTask.isPrivateAttribute() == false) {
                 result += outEdge.getDataSize() / Channel.getTransferSpeed();
             }
-
         }
         return result;
     }
@@ -976,7 +988,7 @@ public class CCSH {
 
             //判断是否是私密任务，是私密任务就是云内传输
             //方法1：
-//            if (succTask.getRunOnPrivateOrPublic() == true) {
+//            if (succTask.isPrivateAttribute() == true) {
 //                //result += succTask.getTaskSize() / VM_Private.SPEEDS[VM_Private.SLOWEST];
 //                result += outEdge.getDataSize() / Channel.getTransferSpeed();
 //            } else {
@@ -984,7 +996,7 @@ public class CCSH {
 //                result += outEdge.getDataSize() / VM.NETWORK_SPEED;
 //            }
             //方法2：
-            if (succTask.getRunOnPrivateOrPublic() == true) {
+            if (succTask.isPrivateAttribute() == true) {
                 //result += succTask.getTaskSize() / VM_Private.SPEEDS[VM_Private.SLOWEST];
                 result += outEdge.getDataSize() / Channel.getTransferSpeed();
             }
@@ -1050,36 +1062,33 @@ public class CCSH {
             boolean isSmaller = false;
             double minParentsDAT = Double.MAX_VALUE;   //针对复制，取到达时间的最小值，再加到DAT中
             for (TAllocation pTAllocation : pTAllocationList) {
-                parentTask.setPriavteVM(pTAllocation.getPrivateVM());  //这里其实用tallocation.getPrivateVM()更好，只是之前没想着加复制调度不得已这样做
-                parentTask.setPublicVM(pTAllocation.getPublicVM());
-                parentTask.setRunOnPrivateOrPublic(pTAllocation.getPrivateVM() == null ? false : true);
-                parentTask.setAST(pTAllocation.getStartTime());
-                parentTask.setAFT(pTAllocation.getFinishTime());
-                if ((parentTask.getRunOnPrivateOrPublic() == false) && parentTask.getPublicVM() == vl) {
-                    double eReadyTime = parentTask.getAFT();  //同一个处理器上我们也记录边分配
+                boolean isRunOnPrivateOrPublic =pTAllocation.getPrivateVM() == null ? false : true;
+                double parentTAFT = pTAllocation.getFinishTime();
+                if ((isRunOnPrivateOrPublic == false) && pTAllocation.getPublicVM() == vl) {
+                    double eReadyTime = parentTAFT;  //同一个处理器上我们也记录边分配
                     double eFinishTime = eReadyTime;
-                    EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPublicVM(), vl, eReadyTime, VM_Public.NETWORK_SPEED, eFinishTime);
+                    EAllocation eAllocation = new EAllocation(inEdge, pTAllocation.getPublicVM(), vl, eReadyTime, VM_Public.NETWORK_SPEED, eFinishTime);
 
-                    if(minParentsDAT>parentTask.getAFT()) {
+                    if(minParentsDAT>parentTAFT) {
                         isSmaller = true;
                         minEAllocationRecord = eAllocation;
                         minCAllocationRecord = null;
                     }
-                    minParentsDAT = Math.min(minParentsDAT, parentTask.getAFT());
+                    minParentsDAT = Math.min(minParentsDAT, parentTAFT);
                     //DAT = Math.max(DAT, parentTask.getAFT());  //line5同一个处理器上
 
                 }
                 //(2)Line6
-                else if ((parentTask.getPublicVM() != vl)
-                        && (parentTask.getRunOnPrivateOrPublic() == false)) //前面是判断u_i ！= v_l，后面一个相当于异或
+                else if ((pTAllocation.getPublicVM() != vl)
+                        && (isRunOnPrivateOrPublic == false)) //前面是判断u_i ！= v_l，后面一个相当于异或
                 {
                     //Line7
-                    double eReadyTime = parentTask.getAFT();
+                    double eReadyTime = parentTAFT;
                     double eFinishTime = eReadyTime + inEdge.getDataSize() / VM_Public.NETWORK_SPEED;
 
 
                     //line8
-                    EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPublicVM(), vl, eReadyTime, VM_Public.NETWORK_SPEED, eFinishTime);
+                    EAllocation eAllocation = new EAllocation(inEdge, pTAllocation.getPublicVM(), vl, eReadyTime, VM_Public.NETWORK_SPEED, eFinishTime);
 
                     //Line9
                     if(minParentsDAT>eFinishTime) {
@@ -1095,7 +1104,7 @@ public class CCSH {
                 //(3)Line10
                 else {
                     //因为vl已经是公有云上服务器，所以只需要判断ui是否是私有云
-                    if (parentTask.getRunOnPrivateOrPublic() == true) {  //line11
+                    if (isRunOnPrivateOrPublic == true) {  //line11
                         //double eReadyTime = edgeReadyTimeFromPrivateTOPublic(inEdge);
                         //获取当前上传通道的每个Edge的开始传输时间和结束传输时间。理论上需要
                         //通过CAllocation获取
@@ -1118,27 +1127,27 @@ public class CCSH {
                             double uploadStartTime = uploadStartTimeList.get(i);
 
                             //这个判断是为了判断如果输入边的父任务在下一个上传阶段开始时间的时候还没有完成，则可以直接跳过此阶段
-                            if (parentTask.getAFT() >= uploadStartTimeList.get(i)) {
+                            if (parentTAFT >= uploadStartTimeList.get(i)) {
                                 continue;
                             }
 
                             //插入在开头，即所有上传边之前
                             if (i == 0) {
 
-                                if (parentTask.getAFT() + inEdge.getDataSize() / Channel.getTransferSpeed() <= uploadStartTime) {
+                                if (parentTAFT + inEdge.getDataSize() / Channel.getTransferSpeed() <= uploadStartTime) {
                                     //此时边准备好了就可以传入了
-                                    double eReadyTime = parentTask.getAFT();
+                                    double eReadyTime = parentTAFT;
                                     double eFinishTime = eReadyTime + inEdge.getDataSize() / Channel.getTransferSpeed();
                                     double channelUploadStartTime = eReadyTime;
                                     double channelUploadFinishTime = eFinishTime;
 
-                                    CAllocation c = new CAllocation(inEdge, parentTask.getPriavteVM(),
+                                    CAllocation c = new CAllocation(inEdge, pTAllocation.getPrivateVM(),
                                             vl, eReadyTime, eFinishTime, channelUploadStartTime, channelUploadFinishTime,
                                             -1, -1, true);
 
 
                                     //永久分配,这个EAllocation可能以后对画图有帮助，这里暂时记录，其实CAllocation已经包括了
-                                    EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPriavteVM(), vl, eReadyTime, Channel.getTransferSpeed(), eFinishTime);
+                                    EAllocation eAllocation = new EAllocation(inEdge, pTAllocation.getPrivateVM(), vl, eReadyTime, Channel.getTransferSpeed(), eFinishTime);
 
                                     isFinal = false;
                                     if(minParentsDAT>eFinishTime) {
@@ -1154,7 +1163,7 @@ public class CCSH {
                             } else {
                                 //前一个任务的完成时间，这里i永远不会为0，所以不会出错
                                 double uploadPreviousFinishTime = uploadFinishTimeList.get(i - 1);
-                                double eReadyTime = Math.max(uploadPreviousFinishTime, parentTask.getAFT());
+                                double eReadyTime = Math.max(uploadPreviousFinishTime, parentTAFT);
                                 //父任务的完成时间>=上传通道的完成时间而且父任务的完成时间+传输时长<=下一个上传通道的开始时间
                                 if (eReadyTime + inEdge.getDataSize() / Channel.getTransferSpeed() <= uploadStartTime) {
 
@@ -1162,13 +1171,13 @@ public class CCSH {
                                     double eFinishTime = eReadyTime + inEdge.getDataSize() / Channel.getTransferSpeed();
                                     double channelUploadFinishTime = eFinishTime;
                                     //永久分配，最后通过cAllocationListRecord中的记录撤销
-                                    CAllocation c = new CAllocation(inEdge, parentTask.getPriavteVM(),
+                                    CAllocation c = new CAllocation(inEdge, pTAllocation.getPrivateVM(),
                                             vl, eReadyTime, eFinishTime, channelUploadStartTime, channelUploadFinishTime,
                                             -1, -1, true);
                                     //永久分配，最后通过cAllocationListRecord中的记录撤销
 
                                     //永久分配,这个EAllocation可能以后对画图有帮助，这里暂时记录，其实CAllocation已经包括了
-                                    EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPriavteVM(), vl, eReadyTime, Channel.getTransferSpeed(), eFinishTime);
+                                    EAllocation eAllocation = new EAllocation(inEdge, pTAllocation.getPrivateVM(), vl, eReadyTime, Channel.getTransferSpeed(), eFinishTime);
 
                                     isFinal = false;
                                     if(minParentsDAT>eFinishTime){
@@ -1193,18 +1202,18 @@ public class CCSH {
                                 finalFinishTime = uploadFinishTimeList.get(uploadFinishTimeList.size() - 1);
                             }
 
-                            double eReadyTime = Math.max(finalFinishTime, parentTask.getAFT());
+                            double eReadyTime = Math.max(finalFinishTime,parentTAFT);
                             double channelUploadStartTime = eReadyTime;
                             double eFinishTime = eReadyTime + inEdge.getDataSize() / Channel.getTransferSpeed();
                             double channelUploadFinishTime = eFinishTime;
                             //永久分配，最后通过cAllocationListRecord中的记录撤销
-                            CAllocation c = new CAllocation(inEdge, parentTask.getPriavteVM(),
+                            CAllocation c = new CAllocation(inEdge, pTAllocation.getPrivateVM(),
                                     vl, eReadyTime, eFinishTime, channelUploadStartTime, channelUploadFinishTime,
                                     -1, -1, true);
 
 
                             //永久分配,这个EAllocation可能以后对画图有帮助，这里暂时记录，其实CAllocation已经包括了
-                            EAllocation eAllocation = new EAllocation(inEdge, parentTask.getPriavteVM(), vl, eReadyTime, Channel.getTransferSpeed(), eFinishTime);
+                            EAllocation eAllocation = new EAllocation(inEdge, pTAllocation.getPrivateVM(), vl, eReadyTime, Channel.getTransferSpeed(), eFinishTime);
 
                             if(minParentsDAT>eFinishTime) {
                                 isSmaller = true;
@@ -1246,14 +1255,15 @@ public class CCSH {
     //其实edgeReadyTimeTransfer = taskFinishTime
     private double getMinEReadyTime(Edge inEdge, VM vm) {
         Task parentTask = inEdge.getSource();
-        double minEReadyTime = parentTask.getAFT();
+        double minEReadyTime = Double.MAX_VALUE-1;
+        for(TAllocation tAllocation: tAllocationList){
+            if(tAllocation.getTask() == parentTask){
+                if(tAllocation.getFinishTime()<minEReadyTime) minEReadyTime = tAllocation.getFinishTime();
+            }
+        }
         return minEReadyTime;
     }
 
-
-    private double edgeReadyTimeFromPrivateTOPublic(Edge inEdge, VM_Private vi) {
-        return 1;
-    }
 
 
     //ture:私有云;false:公有云
@@ -1301,7 +1311,7 @@ public class CCSH {
             Task parent = edge.getSource();
             parentTaskMap.put(parent,new ArrayList<>());
             //需判断父任务的隐私性,如果vm是公有云且父任务私密直接跳过当前
-            if (parent.getRunOnPrivateOrPublic() == true && vm.getAttribute().equals("Public")){
+            if (parent.isPrivateAttribute() == true && vm.getAttribute().equals("Public")){
                 parentTaskMap.remove(parent);
                 continue;
             }
@@ -1324,37 +1334,35 @@ public class CCSH {
 
         for(Task edgesNotInThisVMParentTask : parentTaskMap.keySet()){
             ArrayList<TAllocation> tAllocationArrayList = parentTaskMap.get(edgesNotInThisVMParentTask);
-            //将父任务的数据到达子任务所在处理器时间从小到大排序，到时候取第一个就可
+
+
+            //将父任务的数据到达子任务所在处理器时间从小到大排序，到时候取第一个就可,allocateIncomingEdges(Task nj, VM_Private vl, int step)
             Collections.sort(tAllocationArrayList, new Comparator<TAllocation>() {
                 @Override
                 public int compare(TAllocation t1, TAllocation t2) {
                     if (t1 == null || t2 == null) { //entryTask
                         return 0;
                     }
-                    Task p1 = t1.getTask();
-                    Task p2 = t2.getTask();
-                    Edge e1 = null;
-                    Edge e2 = null;
-                    for(Edge edge : task.getInEdges()){
-                        if(edge.getSource()==p1)e1 = edge;
+                    Edge edge = null;
+                    for(Edge e : task.getInEdges()){
+                        if(e.getSource()==edgesNotInThisVMParentTask)
+                            edge = e;
                     }
-                    for(Edge edge : task.getInEdges()){
-                        if(edge.getSource()==p2)e2 = edge;
-                    }
+
                     double dat1 = t1.getFinishTime();
-                    dat1 += e1.getDataSize()/ VM.NETWORK_SPEED;
+                    dat1 += edge.getDataSize()/ VM.NETWORK_SPEED;
                     double dat2 = t2.getFinishTime();
-                    dat2 += e2.getDataSize()/ VM.NETWORK_SPEED;
+                    dat2 += edge.getDataSize()/ VM.NETWORK_SPEED;
                     //需要跨云，放到最后一个位置即可
                     if(("public".equals(t1.getVM().getAttribute()) && "private".equals(vm.getAttribute()))
                             || ("private".equals(t1.getVM().getAttribute()) && "public".equals(vm.getAttribute())) ) {
-                        dat1 -= e1.getDataSize()/ VM.NETWORK_SPEED;
-                        dat1 += e1.getDataSize()/Channel.getTransferSpeed();
+                        dat1 -= edge.getDataSize()/ VM.NETWORK_SPEED;
+                        dat1 += edge.getDataSize()/Channel.getTransferSpeed();
                     }
                     if(("public".equals(t2.getVM().getAttribute()) && "private".equals(vm.getAttribute()))
                             || ("private".equals(t2.getVM().getAttribute()) && "public".equals(vm.getAttribute())) ) {
-                        dat2 -= e2.getDataSize()/ VM.NETWORK_SPEED;
-                        dat2 += e2.getDataSize()/Channel.getTransferSpeed();
+                        dat2 -= edge.getDataSize()/ VM.NETWORK_SPEED;
+                        dat2 += edge.getDataSize()/Channel.getTransferSpeed();
                     }
                     return Double.compare(dat1, dat2);
                 }
@@ -1376,15 +1384,15 @@ public class CCSH {
                 dat1 = tp1.getFinishTime();
                 dat2 = tp2.getFinishTime();
 
-                if (("Private".equals(vm.getAttribute()) && p1.getRunOnPrivateOrPublic() == true) ||
-                        ("Public".equals(vm.getAttribute()) && p1.getRunOnPrivateOrPublic() == false)
+                if (("Private".equals(vm.getAttribute()) && (tp1.getPrivateVM() == null ? false : true) == true) ||
+                        ("Public".equals(vm.getAttribute()) && (tp1.getPrivateVM() == null ? false : true) == false)
                 ) {  //同属一个云
                     dat1 += e1.getDataSize() / VM.NETWORK_SPEED;
                 } else {//不同属一个云
                     dat1 += e1.getDataSize() / Channel.getTransferSpeed();
                 }
-                if (("Private".equals(vm.getAttribute()) && p2.getRunOnPrivateOrPublic() == true) ||
-                        ("Public".equals(vm.getAttribute()) && p2.getRunOnPrivateOrPublic() == false)
+                if (("Private".equals(vm.getAttribute()) && (tp2.getPrivateVM() == null ? false : true) == true) ||
+                        ("Public".equals(vm.getAttribute()) && (tp2.getPrivateVM() == null ? false : true) == false)
                 ) {  //同属一个云
                     dat2 += e2.getDataSize() / VM.NETWORK_SPEED;
                 } else {//不同属一个云
@@ -1400,8 +1408,8 @@ public class CCSH {
     }
 
 
-    //这个只在同一个云内进行复制
-    public List<Task> getParentsNotInVM2(Task task, VM vm) {
+    //这个只在同一个云内进行复制,如果用到后期需要改
+    /*public List<Task> getParentsNotInVM2(Task task, VM vm) {
         List<Edge> edgesNotInThisVM = new ArrayList<Edge>();
         for (Edge edge : task.getInEdges()) {
             Task parent = edge.getSource();
@@ -1465,7 +1473,7 @@ public class CCSH {
         for (Edge edge : edgesNotInThisVM)
             parentsNotInThisVM.add(edge.getSource());
         return parentsNotInThisVM;
-    }
+    }*/
 }
 
 
