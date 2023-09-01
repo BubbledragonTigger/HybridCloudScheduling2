@@ -1,7 +1,35 @@
-1.在Evaluation中更改读入的文件
-2.在Evaluation中26行更改使用的算法，配合第三步一起修改
-3.在workflow中的setPrivacy中更改隐私
-4.传输带宽更改VM下面的第20行Network Speed
-5.传输带宽更改Channel下面的第47行的transferSpeed
-6.更改VM_Private里面的Slowest
-7.更改VM_Public里面的Fastest
+# Modeling and optimization of hybrid cloud workflow scheduling in a competitive communication environment
+
+## Comparison algorithm
+
+#### 1. CCLS-WO  
+
+#### 2. PSLS 
+
+#### 3. PEFT
+
+#### 4. IPPTS
+
+#### 5. HEFD
+
+## Parameter settings
+
+All parameter settings are placed in the *ProjectCofig.java* class under the *setting* directory
+
+## Starter
+
+Run the *Evaluation. java* file in the *contentAware* directory
+
+## Workflows that can be read
+
+Can read workflows with suffixes of dax, xml, and JSON
+
+Note that JSON format files should refer to this link
+
+https://github.com/wfcommons/wfformat
+
+## Scientific Workflow Source
+
+Some sources refer to this link
+
+https://github.com/wfcommons/pegasus-instances
